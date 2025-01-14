@@ -108,7 +108,78 @@ const GameApp = () => {
       {/* Styles remain the same */}
       <style>
         {`
-          /* Styles go here... */
+          {
+          .game-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: #1c1c1c;
+          }
+
+          .game-canvas {
+            width: 100%;
+            height: 700px;
+            background: url('https://i.imgflip.com/4zei4c.jpg') no-repeat center bottom;
+            background-size: cover;
+          }
+
+          .game-popup, .score-popup, .restart-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            display: none;
+            z-index: 9999;
+            text-align: center;
+          }
+
+          .leaderboards-container {
+            display: flex;
+            justify-content: space-between;
+            padding: 20px;
+          }
+
+          .leaderboard-section {
+            width: 48%;
+          }
+
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 10px;
+            overflow: hidden;
+          }
+
+          th, td {
+            padding: 10px;
+            text-align: left;
+            border: 1px solid #ddd;
+          }
+
+          th {
+            background: #f4f4f4;
+          }
+
+          button {
+            padding: 10px 20px;
+            border-radius: 8px;
+            background: #2054c9;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-family: 'Inconsolata', monospace;
+            margin: 5px;
+          }
+
+          button:hover {
+            background: #1843a8;
+          }
+        }
         `}
       </style>
     </WalletProvider>
