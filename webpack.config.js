@@ -1,13 +1,13 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const MiniCssExtractPlugin = require('mini-css-extract-plugin'); // Optional if using CSS stylesheets
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 module.exports = {
-  entry: '.src/index.js',
+  entry: './src/index.js',
 
   output: {
     filename: 'game-bundle.js',
-    path: path.resolve(__dirname, 'docs'),
+    path: path.resolve(__dirname, 'docs'),  // Keep this the same to output to 'docs' directory
     publicPath: '/',
   },
 
@@ -42,7 +42,7 @@ module.exports = {
   },
 
   devServer: {
-    contentBase: path.join(__dirname, 'docs'),
+    contentBase: path.join(__dirname, 'docs'),  // Serving content from the 'docs' directory
     compress: true,
     port: 9000,
     open: true,
@@ -50,7 +50,8 @@ module.exports = {
 
   plugins: [
     new HtmlWebpackPlugin({
-      template: path.resolve(__dirname, 'index.html'), // Fix the path here
+      // Since your `index.html` is in the `docs` directory, we reference it like so
+      template: path.resolve(__dirname, 'docs', 'index.html'),  // Specify correct path for HTML template
       filename: 'index.html',
     }),
     new MiniCssExtractPlugin({
@@ -59,9 +60,9 @@ module.exports = {
   ],
 
   optimization: {
-    splitChunks: process.env.NODE_ENV === 'production' ? {
+    splitChunks: {
       chunks: 'all',
-    } : false,
+    },
     minimize: process.env.NODE_ENV === 'production',
   },
 
