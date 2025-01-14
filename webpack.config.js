@@ -8,9 +8,9 @@ module.exports = {
 
   // Output settings
   output: {
-    filename: './docs/game-bundle.js',   // The bundled file
-    path: path.resolve(__dirname, 'dist'),  // Output directory (dist)
-    publicPath: '/' // For correctly loading assets if hosted at root
+    filename: 'game-bundle.js',   // Output bundled file
+    path: path.resolve(__dirname, 'docs'),  // Ensure it's saved in the `docs` directory
+    publicPath: '/',  // Serves assets correctly at root level
   },
 
   // Enable source maps for development
@@ -42,10 +42,9 @@ module.exports = {
 
   // Configuration for development server (optional, for local dev)
   devServer: {
-    contentBase: path.resolve(__dirname, 'dist'), // Directory where HTML and bundles are served from
-    compress: true,  // Enable gzip compression
-    port: 9000,      // Port number
-    hot: true        // Enable Hot Module Replacement (HMR)
+    contentBase: path.join(__dirname, 'docs'),
+    compress: true,
+    port: 9000,  // Adjust the port number if necessary
   },
 
   // Webpack plugins
