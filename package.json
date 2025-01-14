@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Aya Game Integration",
   "main": "src/index.js",
-  "homepage": "https://username.github.io/aya-game-integration",  // Add your GitHub Pages URL
+  "homepage": "https://username.github.io/aya-game-integration",
   "dependencies": {
     "@suiet/wallet-kit": "latest",
     "@mysten/sui.js": "latest",
@@ -11,17 +11,18 @@
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
-    "gh-pages": "^5.0.0",  // Add gh-pages for deployment
-    "babel-loader": "^8.2.2",   // Babel loader for JSX
-    "webpack": "^5.61.0",      // Webpack for bundling
-    "webpack-cli": "^4.9.1",   // CLI for Webpack
-    "webpack-dev-server": "^4.5.0",  // Dev server for local testing
-    "html-webpack-plugin": "^5.3.2",  // To inject bundle into HTML
-    "mini-css-extract-plugin": "^2.5.0"  // Optional for CSS bundling
+    "gh-pages": "^5.0.0",
+    "babel-loader": "^8.2.2",
+    "webpack": "^5.61.0",
+    "webpack-cli": "^4.9.1",
+    "webpack-dev-server": "^4.5.0",
+    "html-webpack-plugin": "^5.3.2",
+    "mini-css-extract-plugin": "^2.5.0"
   },
   "scripts": {
-    "start": "webpack serve --mode development",  // For running the dev server
-    "build": "webpack --mode production",  // For building the production bundle
-    "deploy": "npm run build && gh-pages -d dist"  // Deploy to GitHub Pages
+    "start": "webpack serve --mode development",  
+    "build": "webpack --mode production",  
+    "deploy": "npm run build && gh-pages -d docs"  
   }
 }
+
