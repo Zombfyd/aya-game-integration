@@ -9,7 +9,7 @@ module.exports = {
   // Output settings
   output: {
     filename: 'game-bundle.js',   // Output bundled file
-    path: path.resolve(__dirname, 'docs'),  // Ensure it's saved in the `docs` directory
+    path: path.resolve(__dirname, 'dist'),  // Ensure it's saved in the `docs` directory
     publicPath: '/',  // Serves assets correctly at root level
   },
 
@@ -42,7 +42,7 @@ module.exports = {
 
   // Configuration for development server (optional, for local dev)
   devServer: {
-    contentBase: path.join(__dirname, 'docs'),
+    contentBase: path.join(__dirname, 'dist'),
     compress: true,
     port: 9000,  // Adjust the port number if necessary
   },
