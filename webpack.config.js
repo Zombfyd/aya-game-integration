@@ -49,6 +49,13 @@ module.exports = {
     port: process.env.PORT || 9000,
     historyApiFallback: true,
     hot: true,
+    allowedHosts: 'all',
+    // Alternative way to specify hosts if 'all' doesn't work
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+    },
+    // Add this to handle the host header validation
+    host: '0.0.0.0',
   },
 
   plugins: [
