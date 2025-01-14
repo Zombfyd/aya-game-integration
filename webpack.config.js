@@ -8,7 +8,7 @@ module.exports = {
 
   // Output settings
   output: {
-    filename: 'game-bundle.js',   // The bundled file
+    filename: './docs/game-bundle.js',   // The bundled file
     path: path.resolve(__dirname, 'dist'),  // Output directory (dist)
     publicPath: '/' // For correctly loading assets if hosted at root
   },
