@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import GameApp from '../src/GameApp2.jsx';
+import GameApp from '../src/GameApp.jsx';
 
 // Wait for DOM to be ready
 document.addEventListener('DOMContentLoaded', () => {
