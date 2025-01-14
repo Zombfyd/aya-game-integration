@@ -1,11 +1,11 @@
-// package.json adjustments needed
+
 {
   "name": "aya-game-integration",
   "version": "1.0.0",
   "description": "Aya Game Integration",
   "main": "src/index.js",
-  // Remove the GitHub Pages specific homepage
-  // "homepage": "https://username.github.io/aya-game-integration",
+ 
+ 
   "dependencies": {
     "@suiet/wallet-kit": "latest",
     "@mysten/sui.js": "latest",
@@ -13,7 +13,7 @@
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
-    // Add needed dependencies for rendering
+    
     "@babel/core": "^7.16.7",
     "babel-loader": "^8.2.2",
     "webpack": "^5.61.0",
@@ -23,15 +23,11 @@
     "mini-css-extract-plugin": "^2.5.0",
     "@babel/preset-env": "^7.16.7",
     "@babel/preset-react": "^7.16.7",
-    // Remove GitHub Pages specific dependency
-    // "gh-pages": "^5.0.0"
+    
   },
   "scripts": {
     "start": "webpack serve --mode development",
     "build": "webpack --mode production",
-    // Add Render specific script
     "render-build": "webpack --mode production",
-    // Remove GitHub Pages deploy script
-    // "deploy": "npm run build && gh-pages -d docs"
-  }
+      }
 }
