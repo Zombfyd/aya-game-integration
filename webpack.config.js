@@ -50,7 +50,7 @@ module.exports = {
 
   plugins: [
     new HtmlWebpackPlugin({
-      template: path.resolve(__dirname, 'src', 'index.html'), // Fix the path here
+      template: path.resolve(__dirname, 'index.html'), // Fix the path here
       filename: 'index.html',
     }),
     new MiniCssExtractPlugin({
