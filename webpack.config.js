@@ -11,7 +11,7 @@ module.exports = {
     // Update publicPath for Render
     publicPath: '/',
   },
-  
+
   devtool: process.env.NODE_ENV === 'production' ? 'source-map' : 'eval-source-map',
 
   module: {
@@ -50,16 +50,21 @@ module.exports = {
     port: process.env.PORT || 9000,
     historyApiFallback: true,
     hot: true,
-    allowedHosts: 'all',
-    // Alternative way to specify hosts if 'all' doesn't work
-    client: {
-      webSocketURL: 'ws://0.0.0.0:10000/ws', // WebSocket URL (if applicable)
-    },
+    allowedHosts: 'all', // Accept all hosts, critical for Render.
     headers: {
-      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Origin': '*', // For CORS
     },
-    // Add this to handle the host header validation
-    
+    client: {
+      overlay: {
+        errors: false, // Disable error overlays for runtime errors
+        warnings: false, // Disable warnings overlay
+      },
+      webSocketURL: {
+        hostname: '0.0.0.0',
+        port: process.env.PORT || 10000, // Use WebSocket URL dynamically
+        protocol: 'ws',
+      },
+    },
   },
 
   plugins: [
@@ -78,4 +83,4 @@ module.exports = {
   },
 
   mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
-}
+};
