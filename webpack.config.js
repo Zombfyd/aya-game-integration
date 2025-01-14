@@ -46,16 +46,20 @@ module.exports = {
       directory: path.join(__dirname, 'dist'),
     },
     compress: true,
+    host: '0.0.0.0',
     port: process.env.PORT || 9000,
     historyApiFallback: true,
     hot: true,
     allowedHosts: 'all',
     // Alternative way to specify hosts if 'all' doesn't work
+    client: {
+      webSocketURL: 'ws://0.0.0.0:10000/ws', // WebSocket URL (if applicable)
+    },
     headers: {
       'Access-Control-Allow-Origin': '*',
     },
     // Add this to handle the host header validation
-    host: '0.0.0.0',
+    
   },
 
   plugins: [
