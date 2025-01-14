@@ -59,11 +59,9 @@ module.exports = {
     }),
   ],
 
-  optimization: {
-    splitChunks: {
-      chunks: 'all',
-    },
-    minimize: process.env.NODE_ENV === 'production',
+ optimization: {
+    splitChunks: false,  // Explicitly disable chunk splitting
+    minimize: process.env.NODE_ENV === 'production',  // Optional: still minify in production
   },
 
   mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
