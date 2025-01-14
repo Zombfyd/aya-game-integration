@@ -4,14 +4,15 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 module.exports = {
   entry: './src/index.js',
-
   output: {
     filename: 'game-bundle.js',
-    path: path.resolve(__dirname, 'docs'),  // Keep this the same to output to 'docs' directory
+    // Change output path for Render
+    path: path.resolve(__dirname, 'dist'),
+    // Update publicPath for Render
     publicPath: '/',
   },
-
-  devtool: 'source-map',
+  
+  devtool: process.env.NODE_ENV === 'production' ? 'source-map' : 'eval-source-map',
 
   module: {
     rules: [
@@ -28,9 +29,7 @@ module.exports = {
       {
         test: /\.css$/,
         use: [
-          process.env.NODE_ENV === 'production'
-            ? MiniCssExtractPlugin.loader
-            : 'style-loader',
+          MiniCssExtractPlugin.loader,
           'css-loader',
         ],
       },
@@ -41,32 +40,31 @@ module.exports = {
     extensions: ['.js', '.jsx'],
   },
 
+  // Update devServer configuration for Render
   devServer: {
-    contentBase: path.join(__dirname, 'docs'),  // Serving content from the 'docs' directory
+    static: {
+      directory: path.join(__dirname, 'dist'),
+    },
     compress: true,
-    port: 9000,
-    open: true,
+    port: process.env.PORT || 9000,
+    historyApiFallback: true,
+    hot: true,
   },
 
   plugins: [
     new HtmlWebpackPlugin({
-      // Since your `index.html` is in the `docs` directory, we reference it like so
-      template: path.resolve(__dirname, 'docs', 'index.html'),  // Specify correct path for HTML template
+      template: path.resolve(__dirname, 'src', 'index.html'),
       filename: 'index.html',
     }),
     new MiniCssExtractPlugin({
-      filename: 'styles.css',
+      filename: '[name].[contenthash].css',
     }),
   ],
 
- optimization: {
-    splitChunks: false,  // Explicitly disable chunk splitting
-    minimize: process.env.NODE_ENV === 'production',  // Optional: still minify in production
+  optimization: {
+    splitChunks: false,
+    minimize: process.env.NODE_ENV === 'production',
   },
 
   mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
-
-  stats: {
-    children: true,
-  },
-};
+}
