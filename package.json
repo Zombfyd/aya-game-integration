@@ -11,20 +11,18 @@
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
-  "babel-loader": "^8.2.2", 
-  "webpack": "^5.61.0", 
-  "webpack-cli": "^4.9.1", 
-  "webpack-dev-server": "^4.5.0", 
-  "html-webpack-plugin": "^5.3.2", 
-  "mini-css-extract-plugin": "^2.5.0", 
-  "@babel/preset-env": "^7.16.7",  // Ensure this is installed for modern JS features
-  "@babel/preset-react": "^7.16.7"  // Ensure this is also installed for React JSX
-},
-
+    "babel-loader": "^8.2.2",
+    "webpack": "^5.61.0",
+    "webpack-cli": "^4.9.1",
+    "webpack-dev-server": "^4.5.0",
+    "html-webpack-plugin": "^5.3.2",
+    "mini-css-extract-plugin": "^2.5.0",
+    "@babel/preset-env": "^7.16.7",
+    "@babel/preset-react": "^7.16.7"
+  },
   "scripts": {
-    "start": "webpack serve --mode development",  
-    "build": "webpack --mode production",  
-    "deploy": "npm run build && gh-pages -d docs"  
+    "start": "webpack serve --mode development",
+    "build": "webpack --mode production",
+    "deploy": "npm run build && gh-pages -d docs"
   }
 }
-
