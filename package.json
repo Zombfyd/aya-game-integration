@@ -18,7 +18,8 @@
     "html-webpack-plugin": "^5.3.2",
     "mini-css-extract-plugin": "^2.5.0",
     "@babel/preset-env": "^7.16.7",
-    "@babel/preset-react": "^7.16.7"
+    "@babel/preset-react": "^7.16.7",
+    "gh-pages": "^5.0.0"
   },
   "scripts": {
     "start": "webpack serve --mode development",
