@@ -1,187 +1,188 @@
-const GameApp = () => {
-  const [gameStarted, setGameStarted] = useState(false);
-  const [score, setScore] = useState(0);
-  const [playerWallet, setPlayerWallet] = useState("");
-  
-  const handleGameStart = () => {
-    // Update state or handle logic to start the game
-    setGameStarted(true);
-    // Game start logic goes here
-  };
-  
-  const handleScoreSubmit = () => {
-    // Handle score submission logic
-    const walletInput = document.getElementById('playerWallet').value;
-    if (walletInput && score) {
-      // Submit the score with the player's wallet address
-      // For example, sending score to an API or blockchain submission
-      console.log(`Submitting score ${score} for wallet ${walletInput}`);
+// GameApp.jsx
+import React, { useState, useEffect } from 'react';
+import { WalletProvider, useWallet } from '@suiet/wallet-kit';
+
+// First, let's create a separate WalletManager component for better organization
+const WalletManager = ({ onGameStart }) => {
+  const wallet = useWallet();
+  const [status, setStatus] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  // Handle wallet connection changes
+  useEffect(() => {
+    if (wallet.connected) {
+      window.currentWalletAddress = wallet.account?.address;
     } else {
-      alert("Please enter a valid wallet address and score.");
+      window.currentWalletAddress = null;
+    }
+  }, [wallet.connected]);
+
+  return (
+    <div className="wallet-container">
+      <button 
+        onClick={wallet.connected ? wallet.disconnect : wallet.connect}
+        className="wallet-button"
+      >
+        {wallet.connected ? 
+          `${wallet.account?.address.slice(0, 6)}...${wallet.account?.address.slice(-4)}` : 
+          'Connect Wallet'}
+      </button>
+      {status && <div className="status-message">{status}</div>}
+    </div>
+  );
+};
+
+// Main GameApp component
+const GameApp = () => {
+  // State management for game
+  const [gameState, setGameState] = useState({
+    gameStarted: false,
+    score: 0,
+    isGameOver: false
+  });
+  const [leaderboardData, setLeaderboardData] = useState({
+    main: [],
+    secondary: []
+  });
+
+  // Effect to initialize game components
+  useEffect(() => {
+    // Initialize game canvas and other resources
+    const canvas = document.getElementById('tearCatchGameCanvas');
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      canvas.width = canvas.parentNode.offsetWidth;
+      canvas.height = canvas.parentNode.offsetHeight;
+    }
+
+    // Fetch initial leaderboard data
+    fetchLeaderboards();
+  }, []);
+
+  // Function to fetch leaderboard data
+  const fetchLeaderboards = async () => {
+    try {
+      const [mainData, secondaryData] = await Promise.all([
+        fetch('https://ayagame.onrender.com/api/scores/leaderboard/main/free').then(res => res.json()),
+        fetch('https://ayagame.onrender.com/api/scores/leaderboard/secondary/free').then(res => res.json())
+      ]);
+
+      setLeaderboardData({
+        main: mainData,
+        secondary: secondaryData
+      });
+    } catch (error) {
+      console.error('Error fetching leaderboards:', error);
     }
   };
 
-  const startNewGame = () => {
-    setScore(0); // Reset score
-    setGameStarted(false); // Reset game state for restarting
-    // Game restart logic goes here
+  // Handle game start
+  const handleGameStart = () => {
+    setGameState(prev => ({
+      ...prev,
+      gameStarted: true,
+      score: 0,
+      isGameOver: false
+    }));
+    
+    // Initialize game logic here
+    if (window.gameManager) {
+      window.gameManager.startGame();
+    }
   };
+
+  // Handle score submission
+  const handleScoreSubmit = async () => {
+    const walletAddress = window.currentWalletAddress;
+    if (!walletAddress) {
+      alert('Please connect your wallet first');
+      return;
+    }
+
+    try {
+      const response = await fetch('https://ayagame.onrender.com/api/scores/submit/free', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          playerWallet: walletAddress,
+          score: gameState.score,
+          gameType: 'main'
+        })
+      });
+
+      if (response.ok) {
+        alert('Score submitted successfully!');
+        fetchLeaderboards(); // Refresh leaderboards
+      } else {
+        throw new Error('Failed to submit score');
+      }
+    } catch (error) {
+      console.error('Error submitting score:', error);
+      alert('Failed to submit score. Please try again.');
+    }
+  };
+
+  // Render leaderboard table
+  const renderLeaderboard = (data, title) => (
+    <div className="leaderboard-section">
+      <h3>{title}</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Wallet</th>
+            <th>Score</th>
+          </tr>
+        </thead>
+        <tbody>
+          {data.map((entry, index) => (
+            <tr key={index}>
+              <td>{`${entry.playerWallet.slice(0, 6)}...${entry.playerWallet.slice(-4)}`}</td>
+              <td>{entry.score}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 
   return (
     <WalletProvider>
       <div className="game-container">
-        {/* Wallet connection interface */}
         <WalletManager onGameStart={handleGameStart} />
         
-        {/* Game elements */}
-        {!gameStarted && (
-          <div id="startGame" className="game-popup">
+        {!gameState.gameStarted && (
+          <div id="startGame" className="game-popup" style={{ display: 'block' }}>
             <h2>Ready to Play?</h2>
             <button onClick={handleGameStart}>Start Game</button>
           </div>
         )}
 
-        {/* Main game canvas */}
-        <canvas
-          id="tearCatchGameCanvas"
-          className="game-canvas"
-        ></canvas>
+        <canvas id="tearCatchGameCanvas" className="game-canvas" />
 
-        {/* Leaderboard sections */}
         <div className="leaderboards-container">
-          <div className="leaderboard-section">
-            <h3>Main Leaderboard</h3>
-            <table id="mainLeaderboard">
-              <thead>
-                <tr>
-                  <th>Wallet</th>
-                  <th>Score</th>
-                </tr>
-              </thead>
-              <tbody>
-                {/* Leaderboard data */}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="leaderboard-section">
-            <h3>Secondary Leaderboard</h3>
-            <table id="secondaryLeaderboard">
-              <thead>
-                <tr>
-                  <th>Wallet</th>
-                  <th>Score</th>
-                </tr>
-              </thead>
-              <tbody>
-                {/* Secondary leaderboard */}
-              </tbody>
-            </table>
-          </div>
+          {renderLeaderboard(leaderboardData.main, 'Main Leaderboard')}
+          {renderLeaderboard(leaderboardData.secondary, 'Secondary Leaderboard')}
         </div>
 
-        {/* Score popup */}
-        {gameStarted && score === 0 && (
-          <div id="scorePopup" className="score-popup">
+        {gameState.isGameOver && (
+          <div id="scorePopup" className="score-popup" style={{ display: 'block' }}>
             <h2>Game Over!</h2>
-            <p>Your Score: <span id="finalScore">{score}</span></p>
-            <div id="walletInput">
-              <input 
-                type="text" 
-                id="playerWallet" 
-                placeholder="Enter wallet address" 
-                value={playerWallet}
-                onChange={e => setPlayerWallet(e.target.value)}
-              />
-            </div>
+            <p>Your Score: <span>{gameState.score}</span></p>
             <button onClick={handleScoreSubmit}>Submit Score</button>
           </div>
         )}
 
-        {/* Restart game button */}
-        <div id="restartGame" className="restart-popup">
-          <h2>Play Again?</h2>
-          <button onClick={startNewGame}>Restart Game</button>
-        </div>
+        {gameState.isGameOver && (
+          <div id="restartGame" className="restart-popup" style={{ display: 'block' }}>
+            <h2>Play Again?</h2>
+            <button onClick={handleGameStart}>Restart Game</button>
+          </div>
+        )}
       </div>
 
-      {/* Styles remain the same */}
-      <style>
-        {`
-          {
-          .game-container {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            background: #1c1c1c;
-          }
-
-          .game-canvas {
-            width: 100%;
-            height: 700px;
-            background: url('https://i.imgflip.com/4zei4c.jpg') no-repeat center bottom;
-            background-size: cover;
-          }
-
-          .game-popup, .score-popup, .restart-popup {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(255, 255, 255, 0.95);
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-            display: none;
-            z-index: 9999;
-            text-align: center;
-          }
-
-          .leaderboards-container {
-            display: flex;
-            justify-content: space-between;
-            padding: 20px;
-          }
-
-          .leaderboard-section {
-            width: 48%;
-          }
-
-          table {
-            width: 100%;
-            border-collapse: collapse;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 10px;
-            overflow: hidden;
-          }
-
-          th, td {
-            padding: 10px;
-            text-align: left;
-            border: 1px solid #ddd;
-          }
-
-          th {
-            background: #f4f4f4;
-          }
-
-          button {
-            padding: 10px 20px;
-            border-radius: 8px;
-            background: #2054c9;
-            color: white;
-            border: none;
-            cursor: pointer;
-            font-family: 'Inconsolata', monospace;
-            margin: 5px;
-          }
-
-          button:hover {
-            background: #1843a8;
-          }
-        }
-        `}
-      </style>
+      {/* Styles remain the same but moved to a separate CSS file */}
     </WalletProvider>
   );
 };
