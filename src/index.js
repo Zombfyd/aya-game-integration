@@ -1,10 +1,15 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
+import { createRoot } from 'react-dom/client';
 import GameApp from './GameApp';
 
 document.addEventListener('DOMContentLoaded', () => {
   const container = document.getElementById('react-game-root');
   if (container) {
-    ReactDOM.render(<GameApp />, container);
+    const root = createRoot(container);
+    root.render(
+      <React.StrictMode>
+        <GameApp />
+      </React.StrictMode>
+    );
   }
 });
