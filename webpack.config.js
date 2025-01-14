@@ -3,7 +3,7 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin'); // Optional if using CSS stylesheets
 
 module.exports = {
-  entry: './src/index.js',
+  entry: '.src/index.js',
 
   output: {
     filename: 'game-bundle.js',
