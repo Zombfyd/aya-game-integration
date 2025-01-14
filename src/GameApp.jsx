@@ -1,8 +1,7 @@
-// GameApp.jsx
 import React, { useState, useEffect } from 'react';
 import { WalletProvider, useWallet } from '@suiet/wallet-kit';
 
-// First, let's create a separate WalletManager component for better organization
+// WalletManager component to handle wallet connection
 const WalletManager = ({ onGameStart }) => {
   const wallet = useWallet();
   const [status, setStatus] = useState('');
@@ -50,9 +49,10 @@ const WalletManager = ({ onGameStart }) => {
     </div>
   );
 };
+
 // Main GameApp component
 const GameApp = () => {
-  // State management for game
+  const wallet = useWallet(); // Access wallet via hook
   const [gameState, setGameState] = useState({
     gameStarted: false,
     score: 0,
@@ -95,26 +95,24 @@ const GameApp = () => {
   };
 
   // Handle game start
-  // Handle game start
-const handleGameStart = () => {
-  if (!window.currentWalletAddress) {
-    alert('Please connect your wallet first');
-    return;
-  }
+  const handleGameStart = () => {
+    if (!wallet.connected) {
+      alert('Please connect your wallet first');
+      return;
+    }
 
-  setGameState(prev => ({
-    ...prev,
-    gameStarted: true,
-    score: 0,
-    isGameOver: false
-  }));
+    setGameState(prev => ({
+      ...prev,
+      gameStarted: true,
+      score: 0,
+      isGameOver: false
+    }));
 
-  // Initialize game logic here
-  if (window.gameManager) {
-    window.gameManager.startGame();
-  }
-};
-
+    // Call the game manager to start the game
+    if (window.gameManager) {
+      window.gameManager.startGame();
+    }
+  };
 
   // Handle score submission
   const handleScoreSubmit = async () => {
@@ -206,8 +204,6 @@ const handleGameStart = () => {
           </div>
         )}
       </div>
-
-      {/* Styles remain the same but moved to a separate CSS file */}
     </WalletProvider>
   );
 };
