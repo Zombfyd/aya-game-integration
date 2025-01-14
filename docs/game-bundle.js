@@ -3,7 +3,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 
 // Import your GameApp component
-import GameApp from './GameApp.jsx';
+import GameApp from './src/GameApp.jsx';
 
 // Render the GameApp component to a DOM element
 ReactDOM.render(
