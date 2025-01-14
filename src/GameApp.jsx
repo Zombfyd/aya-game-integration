@@ -17,21 +17,39 @@ const WalletManager = ({ onGameStart }) => {
     }
   }, [wallet.connected]);
 
+  const handleConnectDisconnect = async () => {
+    setIsProcessing(true);
+    try {
+      if (wallet.connected) {
+        await wallet.disconnect();
+      } else {
+        await wallet.connect();
+      }
+    } catch (error) {
+      setStatus('Error during connection');
+      console.error('Wallet Connection Error:', error);
+    }
+    setIsProcessing(false);
+  };
+
   return (
     <div className="wallet-container">
       <button 
-        onClick={wallet.connected ? wallet.disconnect : wallet.connect}
+        onClick={handleConnectDisconnect} 
         className="wallet-button"
+        disabled={isProcessing}
       >
-        {wallet.connected ? 
-          `${wallet.account?.address.slice(0, 6)}...${wallet.account?.address.slice(-4)}` : 
-          'Connect Wallet'}
+        {isProcessing 
+          ? 'Connecting...' 
+          : wallet.connected 
+            ? `${wallet.account?.address.slice(0, 6)}...${wallet.account?.address.slice(-4)}` 
+            : 'Connect Wallet'
+        }
       </button>
       {status && <div className="status-message">{status}</div>}
     </div>
   );
 };
-
 // Main GameApp component
 const GameApp = () => {
   // State management for game
