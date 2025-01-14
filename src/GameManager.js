@@ -527,24 +527,4 @@ class GreenSplash extends Splash {
 // Create and export game manager instance
 export const gameManager = new GameManager();
 
-// GameApp.jsx
-import React, { useEffect } from 'react';
-import GameManager from './gameManager';  // Make sure this path is correct
-
-const GameApp = () => {
-  useEffect(() => {
-    // Initialize the game manager when the component is mounted
-    const gameManager = new GameManager();
-    gameManager.start();
-  }, []);
-  
-  return (
-    <div>
-      <h1>Aya Game Integration</h1>
-      {/* Your game rendering here */}
-    </div>
-  );
-};
-
-export default GameApp;
 
