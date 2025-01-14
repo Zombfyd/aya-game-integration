@@ -1,0 +1,12 @@
+{
+  "name": "aya-game-integration",
+  "version": "1.0.0",
+  "description": "Aya Game Integration",
+  "main": "src/index.js",
+  "dependencies": {
+    "@suiet/wallet-kit": "latest",
+    "@mysten/sui.js": "latest",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  }
+}
