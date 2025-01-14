@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';  // Import from 'react-dom/client' for React 18+
 
-import GameApp from '../src/GameApp.jsx';  // Adjust the path as needed
+import GameApp from '../src/GameApp2.jsx';  // Adjust the path as needed
 
 const root = ReactDOM.createRoot(document.getElementById('react-game-root'));  // Create root node
 root.render(
