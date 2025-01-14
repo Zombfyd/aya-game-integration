@@ -1,12 +1,12 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const MiniCssExtractPlugin = require('mini-css-extract-plugin');  // Optional if using CSS
+const MiniCssExtractPlugin = require('mini-css-extract-plugin'); // Optional if using CSS stylesheets
 
 module.exports = {
   entry: './src/index.js',
 
   output: {
-    filename: 'game-bundle.js',  // Single bundled file
+    filename: 'game-bundle.js',
     path: path.resolve(__dirname, 'docs'),
     publicPath: '/',
   },
@@ -28,8 +28,8 @@ module.exports = {
       {
         test: /\.css$/,
         use: [
-          process.env.NODE_ENV === 'production' 
-            ? MiniCssExtractPlugin.loader 
+          process.env.NODE_ENV === 'production'
+            ? MiniCssExtractPlugin.loader
             : 'style-loader',
           'css-loader',
         ],
@@ -50,7 +50,7 @@ module.exports = {
 
   plugins: [
     new HtmlWebpackPlugin({
-      template: './src/index.html',
+      template: path.resolve(__dirname, 'src', 'index.html'), // Fix the path here
       filename: 'index.html',
     }),
     new MiniCssExtractPlugin({
@@ -61,7 +61,7 @@ module.exports = {
   optimization: {
     splitChunks: process.env.NODE_ENV === 'production' ? {
       chunks: 'all',
-    } : false,  // Disable splitChunks in development to avoid conflicts
+    } : false,
     minimize: process.env.NODE_ENV === 'production',
   },
 
