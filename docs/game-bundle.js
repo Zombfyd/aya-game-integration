@@ -2,13 +2,14 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 
-// Import your GameApp component
-import GameApp from './src/GameApp.jsx';
+// Import GameApp component from the correct relative path
+import GameApp from '../src/GameApp.jsx';  // Adjust the path as needed
 
 // Render the GameApp component to a DOM element
 ReactDOM.render(
   <React.StrictMode>
     <GameApp />
   </React.StrictMode>,
-  document.getElementById('react-game-root') // Make sure you have an element with id='root' in your HTML
+  document.getElementById('react-game-root')  // This is your target element in the HTML
 );
+
