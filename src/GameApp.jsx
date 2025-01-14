@@ -95,19 +95,26 @@ const GameApp = () => {
   };
 
   // Handle game start
-  const handleGameStart = () => {
-    setGameState(prev => ({
-      ...prev,
-      gameStarted: true,
-      score: 0,
-      isGameOver: false
-    }));
-    
-    // Initialize game logic here
-    if (window.gameManager) {
-      window.gameManager.startGame();
-    }
-  };
+  // Handle game start
+const handleGameStart = () => {
+  if (!window.currentWalletAddress) {
+    alert('Please connect your wallet first');
+    return;
+  }
+
+  setGameState(prev => ({
+    ...prev,
+    gameStarted: true,
+    score: 0,
+    isGameOver: false
+  }));
+
+  // Initialize game logic here
+  if (window.gameManager) {
+    window.gameManager.startGame();
+  }
+};
+
 
   // Handle score submission
   const handleScoreSubmit = async () => {
