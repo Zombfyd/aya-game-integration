@@ -94,48 +94,49 @@ const GameApp = () => {
   };
 
   const handleScoreSubmit = async () => {
-    if (!wallet.connected || !wallet.account) {
-      alert('Please connect your wallet first');
-      return;
-    }
+  if (!wallet.connected || !wallet.account) {
+    alert('Please connect your wallet first');
+    return;
+  }
 
-    // Sign the score submission message for verification
-    try {
-      const scoreMessage = JSON.stringify({
-        playerAddress: wallet.account.address,
+  try {
+    const scoreMessage = JSON.stringify({
+      playerAddress: wallet.account.address,
+      score: gameState.score,
+      timestamp: Date.now()
+    });
+
+    // Sign the message
+    const signature = await wallet.signPersonalMessage({
+      message: new TextEncoder().encode(scoreMessage),
+    });
+
+    // Submit both score and signature to the server
+    const response = await fetch('https://ayagame.onrender.com/api/scores/submit/free', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        playerWallet: wallet.account.address,
         score: gameState.score,
-        timestamp: Date.now()
-      });
+        gameType: 'main',
+        signature: signature,
+        message: scoreMessage
+      }),
+    });
 
-      // Sign the message using the wallet
-      await wallet.signPersonalMessage({
-        message: new TextEncoder().encode(scoreMessage),
-      });
-
-      // Submit the score to the server
-      const response = await fetch('https://ayagame.onrender.com/api/scores/submit/free', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          playerWallet: wallet.account.address,
-          score: gameState.score,
-          gameType: 'main',
-        }),
-      });
-
-      if (response.ok) {
-        alert('Score submitted successfully!');
-        fetchLeaderboards();
-      } else {
-        throw new Error('Failed to submit score');
-      }
-    } catch (error) {
-      console.error('Error submitting score:', error);
-      alert('Failed to submit score. Please try again.');
+    if (response.ok) {
+      alert('Score submitted successfully!');
+      fetchLeaderboards();
+    } else {
+      throw new Error('Failed to submit score');
     }
-  };
+  } catch (error) {
+    console.error('Error submitting score:', error);
+    alert('Failed to submit score. Please try again.');
+  }
+};
  const fetchLeaderboards = async () => {
     console.log('Fetching leaderboards...');
     try {
