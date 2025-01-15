@@ -1,62 +1,7 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { WalletProvider, useWallet, SuiChainId, useSuiClient } from '@suiet/wallet-kit';
+import React, { useState, useEffect } from 'react';
+import { WalletProvider, useWallet, SuiChainId, useSuiClient, ConnectButton } from '@suiet/wallet-kit';
 import { formatSUI } from '@suiet/wallet-kit';
 import './App.css';
-
-// WalletManager component
-const WalletManager = ({ onGameStart, onGameModeChange }) => {
-  const wallet = useWallet();
-  const [status, setStatus] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
-
-  // Handle wallet connection state
-  useEffect(() => {
-    if (wallet.connected) {
-      window.currentWalletAddress = wallet.account?.address;
-    } else {
-      window.currentWalletAddress = null;
-    }
-  }, [wallet.connected]);
-
-  const handleConnectDisconnect = async () => {
-    setIsProcessing(true);
-    try {
-      if (wallet.connected) {
-        await wallet.disconnect();
-      } else {
-        await wallet.connect();
-      }
-    } catch (error) {
-      setStatus('Error during connection');
-      console.error('Wallet Connection Error:', error);
-    }
-    setIsProcessing(false);
-  };
-
-  return (
-    <div className="wallet-container">
-      <button 
-        onClick={handleConnectDisconnect} 
-        className="wallet-button"
-        disabled={isProcessing}
-      >
-        {isProcessing 
-          ? 'Connecting...' 
-          : wallet.connected 
-            ? `${wallet.account?.address.slice(0, 6)}...${wallet.account?.address.slice(-4)}`
-            : 'Connect Wallet'
-        }
-      </button>
-      {status && <div className="status-message">{status}</div>}
-      {wallet.connected && (
-        <div className="game-mode-selection">
-          <button onClick={() => onGameModeChange('free')}>Play Free Game</button>
-          <button onClick={() => onGameModeChange('paid')}>Play Paid Game (0.2 SUI)</button>
-        </div>
-      )}
-    </div>
-  );
-};
 
 // Main GameApp component
 const GameApp = () => {
@@ -109,14 +54,14 @@ const GameApp = () => {
 
     if (gameMode === 'paid') {
       // Check balance using Suiet's getBalance API
-      const balance = await wallet.getBalance();
-      if (parseFloat(balance) < 0.2) {
-        alert('Insufficient balance for paid game!');
-        return;
-      }
-
-      // Handle payment transaction to play paid game
       try {
+        const balance = await wallet.getBalance();
+        if (parseFloat(balance) < 0.2) {
+          alert('Insufficient balance for paid game!');
+          return;
+        }
+
+        // Handle payment transaction to play paid game
         const recipient = '0xa376ef54b9d89db49e7eac089a4efca84755f6c325429af97a7ce9b3a549642a';
         const tx = await wallet.signAndExecuteTransaction({
           transaction: {
@@ -206,7 +151,10 @@ const GameApp = () => {
   return (
     <WalletProvider>
       <div className="game-container">
-        <WalletManager onGameStart={handleGameStart} onGameModeChange={setGameMode} />
+        <header>
+          {/* Connect button placed in the header */}
+          <ConnectButton />
+        </header>
 
         {!gameState.gameStarted && (
           <div id="startGame" className="game-popup" style={{ display: 'block' }}>
