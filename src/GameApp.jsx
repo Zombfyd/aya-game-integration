@@ -18,6 +18,7 @@ const GameApp = () => {
   });
   const [gameMode, setGameMode] = useState(null); // Tracks selected game mode (free or paid)
   const [triesRemaining, setTriesRemaining] = useState(5); // Tracks remaining tries for paid game
+  const [playerWallet, setPlayerWallet] = useState(''); // Tracks the player's wallet address (manual input)
 
   // Initialize game components and leaderboards
   useEffect(() => {
@@ -52,8 +53,8 @@ const GameApp = () => {
 
   // Handle game start (check wallet and tries)
   const handleGameStart = async () => {
-    if (!wallet.connected) {
-      alert('Please connect your wallet first');
+    if (!wallet.connected && !playerWallet) {
+      alert('Please connect your wallet or input your wallet address first');
       return;
     }
 
@@ -110,9 +111,9 @@ const GameApp = () => {
 
   // Handle score submission
   const handleScoreSubmit = async () => {
-    const walletAddress = window.currentWalletAddress;
+    const walletAddress = wallet.connected ? window.currentWalletAddress : playerWallet;
     if (!walletAddress) {
-      alert('Please connect your wallet first');
+      alert('Please connect your wallet first or input a wallet address');
       return;
     }
     try {
@@ -169,6 +170,20 @@ const GameApp = () => {
         <header>
           <ConnectButton />
         </header>
+
+        {/* Wallet input for leaderboard (during non-paid play) */}
+        {!wallet.connected && !playerWallet && !gameState.gameStarted && (
+          <div className="wallet-input-container">
+            <label htmlFor="walletInput">Enter your wallet address:</label>
+            <input
+              id="walletInput"
+              type="text"
+              value={playerWallet}
+              onChange={(e) => setPlayerWallet(e.target.value)}
+              placeholder="Wallet Address"
+            />
+          </div>
+        )}
 
         {/* Game Mode selection (if game hasn't started yet) */}
         {!gameState.gameStarted && !gameMode && (
