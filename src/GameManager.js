@@ -349,104 +349,28 @@ class GameManager {
     const finalScore = document.getElementById('finalScore');
     if (scorePopup && finalScore) {
       finalScore.textContent = this.score;
-      scorePopup.style.display = 'block';
+      scorePopup.style.visibility = "visible";
     }
-  }
-
-  // Submit score to leaderboard
-  async submitScore() {
-    if (!window.currentWalletAddress) {
-      console.error('No wallet connected');
-      return;
-    }
-
-    try {
-      const endpoint = this.sessionToken 
-        ? 'https://ayagame.onrender.com/api/scores/submit/paid'
-        : 'https://ayagame.onrender.com/api/scores/submit/free';
-
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          playerWallet: window.currentWalletAddress,
-          score: this.score,
-          gameType: 'main',
-          sessionToken: this.sessionToken
-        })
-      });
-
-      if (!response.ok) throw new Error('Failed to submit score');
-
-      // Update leaderboards
-      await this.updateLeaderboards();
-    } catch (error) {
-      console.error('Error submitting score:', error);
-    }
-  }
- async updateLeaderboards() {
-    await Promise.all([
-      this.fetchLeaderboard('main'),
-      this.fetchLeaderboard('secondary')
-    ]);
-  }
-
-  // Fetch leaderboard data
-  async fetchLeaderboard(type) {
-    try {
-      const response = await fetch(`https://ayagame.onrender.com/api/scores/leaderboard/${type}/free`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch ${type} leaderboard`);
-      }
-
-      const data = await response.json();
-      this.updateLeaderboardUI(type, data);
-    } catch (error) {
-      console.error(`Error fetching ${type} leaderboard:`, error);
-    }
-  }
-
-  // Update leaderboard UI
-  updateLeaderboardUI(type, data) {
-    const tableBody = document.querySelector(`#${type}Leaderboard tbody`);
-    if (!tableBody) return;
-
-    tableBody.innerHTML = '';
-    
-    data.forEach(score => {
-      const row = document.createElement('tr');
-      const walletCell = document.createElement('td');
-      const scoreCell = document.createElement('td');
-      
-      const formattedWallet = `${score.playerWallet.slice(0, 6)}...${score.playerWallet.slice(-6)}`;
-      walletCell.textContent = formattedWallet;
-      scoreCell.textContent = score.score;
-
-      row.appendChild(walletCell);
-      row.appendChild(scoreCell);
-      tableBody.appendChild(row);
-    });
   }
 }
 
-// Entity Classes
-class Teardrop {
-  constructor(canvasWidth, speedMultiplier) {
-    this.x = Math.random() * (canvasWidth - 50);
-    this.y = -50;
-    this.speed = Math.random() * 4 * speedMultiplier + Math.random() * 100 * speedMultiplier / 20;
-    this.width = 30;
-    this.height = 50;
+class Entity {
+  constructor(x, y, width, height, speed) {
+    this.x = x;
+    this.y = y;
+    this.width = width;
+    this.height = height;
+    this.speed = speed;
   }
 
   update() {
     this.y += this.speed;
+  }
+}
+
+class Teardrop extends Entity {
+  constructor(canvasWidth, speedMultiplier) {
+    super(Math.random() * canvasWidth, 0, 50, 50, Math.random() * 2 + 2 * speedMultiplier);
   }
 
   draw(ctx, image) {
@@ -454,73 +378,46 @@ class Teardrop {
   }
 }
 
-class Goldtear extends Teardrop {
-  constructor(canvasWidth, speedMultiplier) {
-    super(canvasWidth, speedMultiplier);
-    this.speed = Math.random() * 6 * speedMultiplier + Math.random() * 100 * speedMultiplier / 20;
-  }
-}
+class Goldtear extends Teardrop {}
+class Redtear extends Teardrop {}
+class Blacktear extends Teardrop {}
 
-class Redtear extends Teardrop {
-  constructor(canvasWidth, speedMultiplier) {
-    super(canvasWidth, speedMultiplier);
-    this.speed = Math.random() * 3 * speedMultiplier + Math.random() * 100 * speedMultiplier / 20;
-  }
-}
-
-class Blacktear extends Teardrop {
-  constructor(canvasWidth, speedMultiplier) {
-    super(canvasWidth, speedMultiplier);
-    this.speed = Math.random() * 4 * speedMultiplier + Math.random() * 100 * speedMultiplier / 20;
-  }
-}
-
-// Splash effect classes
 class Splash {
   constructor(x, y) {
     this.x = x;
     this.y = y;
-    this.size = 30;
     this.opacity = 1;
   }
 
   update() {
-    this.size += 5;
-    this.opacity -= 0.05;
+    this.opacity -= 0.03;
   }
 
   draw(ctx) {
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(32, 84, 201, ${this.opacity})`;
+    ctx.fillStyle = `rgba(255, 0, 0, ${this.opacity})`;
+    ctx.arc(this.x, this.y, 20, 0, Math.PI * 2);
     ctx.fill();
   }
 }
 
 class GoldSplash extends Splash {
-  draw(ctx) {
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(255, 140, 0, ${this.opacity})`;
-    ctx.fill();
+  constructor(x, y) {
+    super(x, y);
+    this.fillColor = "rgba(255, 204, 51";
   }
 }
 
 class RedSplash extends Splash {
-  draw(ctx) {
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(100, 28, 43, ${this.opacity})`;
-    ctx.fill();
+  constructor(x, y) {
+    super(x, y);
+    this.fillColor = "rgba(255, 0, 0";
   }
 }
 
 class GreenSplash extends Splash {
-  draw(ctx) {
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(124, 252, 0, ${this.opacity})`;
-    ctx.fill();
+  constructor(x, y) {
+    super(x, y);
+    this.fillColor = "rgba(0, 255, 0";
   }
 }
 
