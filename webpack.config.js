@@ -6,13 +6,12 @@ module.exports = {
   entry: './src/index.js',
   output: {
     filename: 'game-bundle.js',
-    // Change output path for Render
     path: path.resolve(__dirname, 'dist'),
-    // Update publicPath for Render
     publicPath: '/',
   },
 
-  devtool: process.env.NODE_ENV === 'production' ? 'source-map' : 'eval-source-map',
+  // Use source map only in production environment
+  devtool: process.env.NODE_ENV === 'production' ? 'source-map' : false,
 
   module: {
     rules: [
@@ -40,34 +39,6 @@ module.exports = {
     extensions: ['.js', '.jsx'],
   },
 
-  // Update devServer configuration for Render
-  devServer: {
-  static: {
-    directory: path.join(__dirname, 'dist'),
-  },
-  compress: true,
-  host: '0.0.0.0',
-  port: process.env.PORT || 9000,
-  historyApiFallback: true,
-  hot: true,
-  allowedHosts: 'all',
-  headers: {
-    'Access-Control-Allow-Origin': '*', // For CORS
-  },
-  client: {
-    overlay: {
-      errors: false, // Disable error overlays for runtime errors
-      warnings: false, // Disable warnings overlay
-    },
-    webSocketURL: {
-      hostname: '0.0.0.0',
-      port: process.env.PORT || 10000,
-      protocol: 'ws',
-    },
-  },
-},
-
-
   plugins: [
     new HtmlWebpackPlugin({
       template: path.resolve(__dirname, 'docs', 'index.html'),
@@ -79,9 +50,9 @@ module.exports = {
   ],
 
   optimization: {
-    splitChunks: false,
-    minimize: process.env.NODE_ENV === 'production',
+    splitChunks: false, // No code splitting
+    minimize: process.env.NODE_ENV === 'production', // Minify in production
   },
 
-  mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
+  mode: 'production', // Force production mode
 };
