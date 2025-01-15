@@ -59,43 +59,51 @@ const GameApp = () => {
   }, [walletInitialized]);
 
   const handleGameStart = async () => {
-    if (!wallet.connected) {
-      alert('Please connect your wallet first');
-      return;
-    }
+  if (!wallet.connected) {
+    alert('Please connect your wallet first');
+    return;
+  }
 
-    if (gameMode === 'paid') {
+  if (gameMode === 'paid') {
+    try {
+      setPaying(true);
+      const recipient = '0xa376ef54b9d89db49e7eac089a4efca84755f6c325429af97a7ce9b3a549642a';
+      
+      // Updated transaction format for Sui wallet kit
       try {
-        setPaying(true);
-        const recipient = '0xa376ef54b9d89db49e7eac089a4efca84755f6c325429af97a7ce9b3a549642a';
+        const response = await wallet.signAndExecuteTransaction({
+          transaction: {
+            kind: 'moveCall',
+            data: {
+              packageObjectId: '0x2',
+              module: 'pay',
+              function: 'split_and_transfer',
+              typeArguments: ['0x2::sui::SUI'],
+              arguments: [
+                recipient,
+                (0.2 * 1000000000).toString() // Convert to string to avoid precision issues
+              ],
+              gasBudget: 10000,
+            }
+          }
+        });
         
-        try {
-          const response = await wallet.signAndExecuteTransaction({
-            transaction: {
-              kind: 'pay',
-              data: {
-                recipient: recipient,
-                amount: 0.2 * 1000000000, // Convert to MIST
-              },
-            },
-          });
-          
-          console.log('Payment successful:', response);
-          startGame();
-        } catch (txError) {
-          console.error('Transaction failed:', txError);
-          alert('Payment failed. Please try again.');
-          setPaying(false);
-        }
-      } catch (error) {
-        console.error('Error during payment process:', error);
-        alert('Error processing payment. Please try again.');
+        console.log('Payment successful:', response);
+        startGame();
+      } catch (txError) {
+        console.error('Transaction failed:', txError);
+        alert('Payment failed. Please try again.');
         setPaying(false);
       }
-    } else {
-      startGame();
+    } catch (error) {
+      console.error('Error during payment process:', error);
+      alert('Error processing payment. Please try again.');
+      setPaying(false);
     }
-  };
+  } else {
+    startGame();
+  }
+};
 const startGame = () => {
     // Reset paying state and initialize new game state
     setPaying(false);
@@ -159,75 +167,102 @@ const startGame = () => {
   };
 
   const fetchLeaderboards = async () => {
-    console.log('Fetching leaderboards...');
-    setIsLeaderboardLoading(true);  // Show loading state
+  console.log('Starting leaderboard fetch...');
+  setIsLeaderboardLoading(true);
+  
+  try {
+    // Add timestamp to prevent caching
+    const timestamp = new Date().getTime();
     
-    try {
-      // Add timestamp to prevent caching
-      const timestamp = new Date().getTime();
+    const fetchWithTimeout = async (url) => {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 5000);
       
-      // Helper function to fetch with timeout
-      const fetchWithTimeout = async (url) => {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 5000);
+      try {
+        console.log(`Fetching from ${url}...`);
+        const response = await fetch(`${url}?t=${timestamp}`, {
+          signal: controller.signal,
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache',
+            'Accept': 'application/json'
+          }
+        });
+        clearTimeout(timeout);
+        
+        if (!response.ok) {
+          console.error(`Error response from ${url}:`, response.status, response.statusText);
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const text = await response.text(); // Get response as text first
+        console.log(`Raw response from ${url}:`, text);
         
         try {
-          const response = await fetch(`${url}?t=${timestamp}`, {
-            signal: controller.signal,
-            headers: {
-              'Cache-Control': 'no-cache',
-              'Pragma': 'no-cache'
-            }
-          });
-          clearTimeout(timeout);
-          
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-          const data = await response.json();
-          console.log(`Fetched data for ${url}:`, data);
+          const data = JSON.parse(text);
+          console.log(`Parsed data from ${url}:`, data);
           return data;
-        } catch (error) {
-          clearTimeout(timeout);
-          throw error;
+        } catch (parseError) {
+          console.error(`JSON parse error for ${url}:`, parseError);
+          throw new Error(`Failed to parse JSON from ${url}`);
         }
-      };
+      } catch (error) {
+        clearTimeout(timeout);
+        console.error(`Fetch error for ${url}:`, error);
+        throw error;
+      }
+    };
 
-      // Fetch all leaderboard data in parallel
-      const [mainFreeData, secondaryFreeData, mainPaidData, secondaryPaidData] = await Promise.all([
-        fetchWithTimeout('https://ayagame.onrender.com/api/scores/leaderboard/main/free'),
-        fetchWithTimeout('https://ayagame.onrender.com/api/scores/leaderboard/secondary/free'),
-        fetchWithTimeout('https://ayagame.onrender.com/api/scores/leaderboard/main/paid'),
-        fetchWithTimeout('https://ayagame.onrender.com/api/scores/leaderboard/secondary/paid')
-      ]);
-
-      console.log('Setting leaderboard data:', {
-        mainFreeData,
-        secondaryFreeData,
-        mainPaidData,
-        secondaryPaidData
+    // Fetch each leaderboard separately to better track errors
+    const mainFreeData = await fetchWithTimeout('https://ayagame.onrender.com/api/scores/leaderboard/main/free')
+      .catch(error => {
+        console.error('Main free leaderboard error:', error);
+        return [];
       });
 
-      // Update leaderboard state with fetched data
-      setLeaderboardData({
-        mainFree: mainFreeData || [],
-        secondaryFree: secondaryFreeData || [],
-        mainPaid: mainPaidData || [],
-        secondaryPaid: secondaryPaidData || []
+    const secondaryFreeData = await fetchWithTimeout('https://ayagame.onrender.com/api/scores/leaderboard/secondary/free')
+      .catch(error => {
+        console.error('Secondary free leaderboard error:', error);
+        return [];
       });
-    } catch (error) {
-      console.error('Error fetching leaderboards:', error);
-      // Set empty arrays if fetch fails
-      setLeaderboardData({
-        mainFree: [],
-        secondaryFree: [],
-        mainPaid: [],
-        secondaryPaid: []
+
+    const mainPaidData = await fetchWithTimeout('https://ayagame.onrender.com/api/scores/leaderboard/main/paid')
+      .catch(error => {
+        console.error('Main paid leaderboard error:', error);
+        return [];
       });
-    } finally {
-      setIsLeaderboardLoading(false);  // Hide loading state
-    }
-  };
+
+    const secondaryPaidData = await fetchWithTimeout('https://ayagame.onrender.com/api/scores/leaderboard/secondary/paid')
+      .catch(error => {
+        console.error('Secondary paid leaderboard error:', error);
+        return [];
+      });
+
+    console.log('All leaderboard data fetched:', {
+      mainFreeData,
+      secondaryFreeData,
+      mainPaidData,
+      secondaryPaidData
+    });
+
+    setLeaderboardData({
+      mainFree: mainFreeData || [],
+      secondaryFree: secondaryFreeData || [],
+      mainPaid: mainPaidData || [],
+      secondaryPaid: secondaryPaidData || []
+    });
+  } catch (error) {
+    console.error('Overall leaderboard fetch error:', error);
+    setLeaderboardData({
+      mainFree: [],
+      secondaryFree: [],
+      mainPaid: [],
+      secondaryPaid: []
+    });
+  } finally {
+    setIsLeaderboardLoading(false);
+  }
+};
 
   const renderLeaderboard = (data, title) => (
     <div className="leaderboard-section">
