@@ -55,12 +55,15 @@ module.exports = {
 
   devServer: {
     static: {
-      directory: path.join(__dirname, 'dist'),
+      directory: path.join(__dirname, 'dist'),  // Ensure Webpack can serve static files correctly
     },
     client: {
       logging: 'none',  // Suppresses "Server started" messages
     },
     hot: false,  // Disable hot module replacement
     liveReload: false,  // Disable live reload
+    allowedHosts: 'all',  // Allow requests from all hosts to fix the "Invalid Host header" error
+    host: '0.0.0.0',  // Allow incoming connections from any IP address
+    port: 3000,  // Define your preferred port
   },
 };
