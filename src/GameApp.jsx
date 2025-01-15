@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { WalletProvider, useWallet } from '@suiet/wallet-kit';
 
 // WalletManager component to handle wallet connection
-const WalletManager = ({ onGameStart }) => {
+const WalletManager = ({ onGameStart, onGameModeChange }) => {
   const wallet = useWallet();
   const [status, setStatus] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -46,6 +46,12 @@ const WalletManager = ({ onGameStart }) => {
         }
       </button>
       {status && <div className="status-message">{status}</div>}
+      {wallet.connected && (
+        <div className="game-mode-selection">
+          <button onClick={() => onGameModeChange('free')}>Play Free Game</button>
+          <button onClick={() => onGameModeChange('paid')}>Play Paid Game (0.2 SUI)</button>
+        </div>
+      )}
     </div>
   );
 };
@@ -62,6 +68,7 @@ const GameApp = () => {
     main: [],
     secondary: []
   });
+  const [gameMode, setGameMode] = useState('free'); // Tracks the selected game mode
 
   // Effect to initialize game components
   useEffect(() => {
@@ -95,12 +102,39 @@ const GameApp = () => {
   };
 
   // Handle game start
-  const handleGameStart = () => {
+  const handleGameStart = async () => {
     if (!wallet.connected) {
       alert('Please connect your wallet first');
       return;
     }
 
+    if (gameMode === 'paid') {
+      // Check if user has enough SUI for payment
+      const balance = await wallet.getBalance();
+      if (parseFloat(balance) < 0.2) {
+        alert('Insufficient balance for paid game!');
+        return;
+      }
+      
+      // Initiate the payment (sending .2 SUI to the specified address)
+      try {
+        const transaction = await wallet.signAndExecuteTransaction({
+          transaction: {
+            // Create transaction with the necessary parameters to send 0.2 SUI
+            amount: 0.2,
+            recipient: '0xa376ef54b9d89db49e7eac089a4efca84755f6c325429af97a7ce9b3a549642a',
+            type: 'send'
+          }
+        });
+        console.log('Payment for paid game successful', transaction);
+      } catch (error) {
+        console.error('Payment failed:', error);
+        alert('Payment failed, please try again later.');
+        return;
+      }
+    }
+
+    // Start the game after payment or for a free game
     setGameState(prev => ({
       ...prev,
       gameStarted: true,
@@ -108,9 +142,9 @@ const GameApp = () => {
       isGameOver: false
     }));
 
-    // Call the game manager to start the game
+    // Initialize game logic here (depending on mode)
     if (window.gameManager) {
-      window.gameManager.startGame();
+      window.gameManager.startGame(gameMode); // Pass gameMode to game manager
     }
   };
 
@@ -173,7 +207,7 @@ const GameApp = () => {
   return (
     <WalletProvider>
       <div className="game-container">
-        <WalletManager onGameStart={handleGameStart} />
+        <WalletManager onGameStart={handleGameStart} onGameModeChange={setGameMode} />
         
         {!gameState.gameStarted && (
           <div id="startGame" className="game-popup" style={{ display: 'block' }}>
