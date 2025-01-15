@@ -96,11 +96,160 @@ const GameApp = () => {
       startGame();
     }
   };
+const startGame = () => {
+    // Reset paying state and initialize new game state
+    setPaying(false);
+    setGameState(prev => ({
+      ...prev,
+      gameStarted: true,
+      score: 0,
+      isGameOver: false,
+    }));
 
-  // Rest of your code remains the same (startGame, handleScoreSubmit, fetchLeaderboards, renderLeaderboard)
-  // ... 
+    // Start the game using the game manager with current mode
+    if (window.gameManager) {
+      window.gameManager.startGame(gameMode);
+    }
+  };
 
-  // Updated render method
+  const handleScoreSubmit = async () => {
+    if (!wallet.connected || !wallet.account) {
+      alert('Please connect your wallet first');
+      return;
+    }
+
+    try {
+      // Create and sign a message containing the score data
+      const scoreMessage = JSON.stringify({
+        playerAddress: wallet.account.address,
+        score: gameState.score,
+        timestamp: Date.now()
+      });
+
+      // Sign the message for verification
+      const signature = await wallet.signPersonalMessage({
+        message: new TextEncoder().encode(scoreMessage),
+      });
+
+      // Submit score data to the server
+      const response = await fetch('https://ayagame.onrender.com/api/scores/submit/free', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          playerWallet: wallet.account.address,
+          score: gameState.score,
+          gameType: 'main',
+          signature: signature,
+          message: scoreMessage
+        }),
+      });
+
+      if (response.ok) {
+        alert('Score submitted successfully!');
+        fetchLeaderboards(); // Refresh leaderboards after submission
+      } else {
+        throw new Error('Failed to submit score');
+      }
+    } catch (error) {
+      console.error('Error submitting score:', error);
+      alert('Failed to submit score. Please try again.');
+    }
+  };
+
+  const fetchLeaderboards = async () => {
+    console.log('Fetching leaderboards...');
+    setIsLeaderboardLoading(true);  // Show loading state
+    
+    try {
+      // Add timestamp to prevent caching
+      const timestamp = new Date().getTime();
+      
+      // Helper function to fetch with timeout
+      const fetchWithTimeout = async (url) => {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 5000);
+        
+        try {
+          const response = await fetch(`${url}?t=${timestamp}`, {
+            signal: controller.signal,
+            headers: {
+              'Cache-Control': 'no-cache',
+              'Pragma': 'no-cache'
+            }
+          });
+          clearTimeout(timeout);
+          
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          const data = await response.json();
+          console.log(`Fetched data for ${url}:`, data);
+          return data;
+        } catch (error) {
+          clearTimeout(timeout);
+          throw error;
+        }
+      };
+
+      // Fetch all leaderboard data in parallel
+      const [mainFreeData, secondaryFreeData, mainPaidData, secondaryPaidData] = await Promise.all([
+        fetchWithTimeout('https://ayagame.onrender.com/api/scores/leaderboard/main/free'),
+        fetchWithTimeout('https://ayagame.onrender.com/api/scores/leaderboard/secondary/free'),
+        fetchWithTimeout('https://ayagame.onrender.com/api/scores/leaderboard/main/paid'),
+        fetchWithTimeout('https://ayagame.onrender.com/api/scores/leaderboard/secondary/paid')
+      ]);
+
+      console.log('Setting leaderboard data:', {
+        mainFreeData,
+        secondaryFreeData,
+        mainPaidData,
+        secondaryPaidData
+      });
+
+      // Update leaderboard state with fetched data
+      setLeaderboardData({
+        mainFree: mainFreeData || [],
+        secondaryFree: secondaryFreeData || [],
+        mainPaid: mainPaidData || [],
+        secondaryPaid: secondaryPaidData || []
+      });
+    } catch (error) {
+      console.error('Error fetching leaderboards:', error);
+      // Set empty arrays if fetch fails
+      setLeaderboardData({
+        mainFree: [],
+        secondaryFree: [],
+        mainPaid: [],
+        secondaryPaid: []
+      });
+    } finally {
+      setIsLeaderboardLoading(false);  // Hide loading state
+    }
+  };
+
+  const renderLeaderboard = (data, title) => (
+    <div className="leaderboard-section">
+      <h3>{title}</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Wallet</th>
+            <th>Score</th>
+          </tr>
+        </thead>
+        <tbody>
+          {(data || []).map((entry, index) => (
+            <tr key={index}>
+              <td>{`${entry.playerWallet.slice(0, 6)}...${entry.playerWallet.slice(-4)}`}</td>
+              <td>{entry.score}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
   return (
     <div className="game-container">
       <header>
