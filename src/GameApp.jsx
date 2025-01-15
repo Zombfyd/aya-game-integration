@@ -1,11 +1,13 @@
+// GameApp.jsx
 import React, { useState, useEffect } from 'react';
-import { WalletProvider, useWallet, ConnectButton } from '@suiet/wallet-kit';
-import { Transaction } from "@mysten/sui/transactions";
+import { useWallet, ConnectButton } from '@suiet/wallet-kit';
 import './App.css';
 
 const GameApp = () => {
-  // Get wallet instance from the hook
+  // Wallet hook and state management
   const wallet = useWallet();
+  const [walletInitialized, setWalletInitialized] = useState(false);
+  const [isLeaderboardLoading, setIsLeaderboardLoading] = useState(false);
   
   // Game state management
   const [gameState, setGameState] = useState({
@@ -22,21 +24,39 @@ const GameApp = () => {
   const [gameMode, setGameMode] = useState('free');
   const [paying, setPaying] = useState(false);
 
-  // Effect to handle wallet connection state
+  // Enhanced wallet connection monitoring
   useEffect(() => {
-    if (!wallet.connected) return;
-    
-    // Log wallet connection details for debugging
-    console.log('Connected wallet name:', wallet.name);
-    console.log('Account address:', wallet.account?.address);
-    console.log('Account publicKey:', wallet.account?.publicKey);
-    
-    // Update global wallet address for game usage
-    window.currentWalletAddress = wallet.account?.address;
-    
-    // Fetch leaderboards when wallet connects
-    fetchLeaderboards();
-  }, [wallet.connected]);
+    const updateWalletState = async () => {
+      if (wallet.connected && wallet.account) {
+        console.log('Wallet connected:', {
+          name: wallet.name,
+          address: wallet.account.address,
+          status: wallet.status
+        });
+        
+        window.currentWalletAddress = wallet.account.address;
+        setWalletInitialized(true);
+        await fetchLeaderboards(); // Fetch leaderboards when wallet connects
+      } else {
+        console.log('Wallet disconnected or not ready');
+        window.currentWalletAddress = null;
+        setWalletInitialized(false);
+      }
+    };
+
+    updateWalletState();
+  }, [wallet.connected, wallet.account, wallet.status]);
+
+  // Initialize game when wallet is ready
+  useEffect(() => {
+    const initializeGame = async () => {
+      if (window.gameManager && walletInitialized) {
+        await window.gameManager.initialize();
+      }
+    };
+
+    initializeGame();
+  }, [walletInitialized]);
 
   const handleGameStart = async () => {
     if (!wallet.connected) {
@@ -47,19 +67,17 @@ const GameApp = () => {
     if (gameMode === 'paid') {
       try {
         setPaying(true);
-        
-        // Create a new transaction for payment
-        const tx = new Transaction();
         const recipient = '0xa376ef54b9d89db49e7eac089a4efca84755f6c325429af97a7ce9b3a549642a';
-        const amount = 0.2 * 1000000000; // Convert to MIST (SUI's smallest unit)
         
-        // Add payment to transaction
-        tx.transferObjects([tx.pure(amount)], recipient);
-        
-        // Execute the transaction
         try {
           const response = await wallet.signAndExecuteTransaction({
-            transaction: tx,
+            transaction: {
+              kind: 'pay',
+              data: {
+                recipient: recipient,
+                amount: 0.2 * 1000000000, // Convert to MIST
+              },
+            },
           });
           
           console.log('Payment successful:', response);
@@ -79,203 +97,68 @@ const GameApp = () => {
     }
   };
 
-  const startGame = () => {
-    setPaying(false);
-    setGameState(prev => ({
-      ...prev,
-      gameStarted: true,
-      score: 0,
-      isGameOver: false,
-    }));
+  // Rest of your code remains the same (startGame, handleScoreSubmit, fetchLeaderboards, renderLeaderboard)
+  // ... 
 
-    if (window.gameManager) {
-      window.gameManager.startGame(gameMode);
-    }
-  };
+  // Updated render method
+  return (
+    <div className="game-container">
+      <header>
+        <ConnectButton />
+        <div className="wallet-status">
+          {wallet.connecting && <div>Connecting...</div>}
+          {wallet.connected && wallet.account && (
+            <div className="wallet-info">
+              Connected to {wallet.name}
+              <br />
+              {wallet.account.address.slice(0, 6)}...{wallet.account.address.slice(-4)}
+            </div>
+          )}
+        </div>
+        <div className="mode-selector">
+          <button 
+            onClick={() => setGameMode('free')}
+            className={gameMode === 'free' ? 'active' : ''}
+            disabled={!wallet.connected}
+          >
+            Free Mode
+          </button>
+          <button 
+            onClick={() => setGameMode('paid')}
+            className={gameMode === 'paid' ? 'active' : ''}
+            disabled={!wallet.connected}
+          >
+            Paid Mode
+          </button>
+        </div>
+      </header>
 
-  const handleScoreSubmit = async () => {
-  if (!wallet.connected || !wallet.account) {
-    alert('Please connect your wallet first');
-    return;
-  }
+      {wallet.connected && !gameState.gameStarted && (
+        <div className="game-popup">
+          <h2>Ready to Play?</h2>
+          <button 
+            onClick={handleGameStart}
+            disabled={paying}
+          >
+            {gameMode === 'paid' ? 'Pay 0.2 SUI and Start Game' : 'Start Free Game'}
+          </button>
+        </div>
+      )}
 
-  try {
-    const scoreMessage = JSON.stringify({
-      playerAddress: wallet.account.address,
-      score: gameState.score,
-      timestamp: Date.now()
-    });
+      {!wallet.connected && (
+        <div className="game-popup">
+          <h2>Connect Wallet to Play</h2>
+          <p>Please connect your wallet to start playing</p>
+        </div>
+      )}
 
-    // Sign the message
-    const signature = await wallet.signPersonalMessage({
-      message: new TextEncoder().encode(scoreMessage),
-    });
+      <canvas id="tearCatchGameCanvas" className="game-canvas" />
 
-    // Submit both score and signature to the server
-    const response = await fetch('https://ayagame.onrender.com/api/scores/submit/free', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        playerWallet: wallet.account.address,
-        score: gameState.score,
-        gameType: 'main',
-        signature: signature,
-        message: scoreMessage
-      }),
-    });
-
-    if (response.ok) {
-      alert('Score submitted successfully!');
-      fetchLeaderboards();
-    } else {
-      throw new Error('Failed to submit score');
-    }
-  } catch (error) {
-    console.error('Error submitting score:', error);
-    alert('Failed to submit score. Please try again.');
-  }
-};
- const fetchLeaderboards = async () => {
-    console.log('Fetching leaderboards...');
-    try {
-      // Add a timestamp to prevent caching
-      const timestamp = new Date().getTime();
-      const fetchWithTimeout = async (url) => {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-        
-        try {
-          const response = await fetch(`${url}?t=${timestamp}`, {
-            signal: controller.signal,
-            headers: {
-              'Cache-Control': 'no-cache',
-              'Pragma': 'no-cache'
-            }
-          });
-          clearTimeout(timeout);
-          
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-          const data = await response.json();
-          console.log(`Fetched data for ${url}:`, data); // Debug log
-          return data;
-        } catch (error) {
-          clearTimeout(timeout);
-          throw error;
-        }
-      };
-
-      const [mainFreeData, secondaryFreeData, mainPaidData, secondaryPaidData] = await Promise.all([
-        fetchWithTimeout('https://ayagame.onrender.com/api/scores/leaderboard/main/free'),
-        fetchWithTimeout('https://ayagame.onrender.com/api/scores/leaderboard/secondary/free'),
-        fetchWithTimeout('https://ayagame.onrender.com/api/scores/leaderboard/main/paid'),
-        fetchWithTimeout('https://ayagame.onrender.com/api/scores/leaderboard/secondary/paid')
-      ]);
-
-      console.log('Setting leaderboard data:', {
-        mainFreeData,
-        secondaryFreeData,
-        mainPaidData,
-        secondaryPaidData
-      });
-
-      setLeaderboardData({
-        mainFree: mainFreeData || [],
-        secondaryFree: secondaryFreeData || [],
-        mainPaid: mainPaidData || [],
-        secondaryPaid: secondaryPaidData || []
-      });
-    } catch (error) {
-      console.error('Error fetching leaderboards:', error);
-      // Set empty arrays if fetch fails but don't throw the error
-      setLeaderboardData({
-        mainFree: [],
-        secondaryFree: [],
-        mainPaid: [],
-        secondaryPaid: []
-      });
-    }
-  };
-  const renderLeaderboard = (data, title) => (
-    <div className="leaderboard-section">
-      <h3>{title}</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Wallet</th>
-            <th>Score</th>
-          </tr>
-        </thead>
-        <tbody>
-          {(data || []).map((entry, index) => (
-            <tr key={index}>
-              <td>{`${entry.playerWallet.slice(0, 6)}...${entry.playerWallet.slice(-4)}`}</td>
-              <td>{entry.score}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-
-return (
-    <WalletProvider>
-      <div className="game-container">
-        <header>
-          <ConnectButton />
-          <div className="wallet-info">
-            {wallet.connected && (
-              <div>
-                Connected to {wallet.name}
-                <br />
-                {wallet.account?.address.slice(0, 6)}...{wallet.account?.address.slice(-4)}
-              </div>
-            )}
-          </div>
-          <div className="mode-selector">
-            <button 
-              onClick={() => setGameMode('free')}
-              className={gameMode === 'free' ? 'active' : ''}
-              disabled={!wallet.connected}
-            >
-              Free Mode
-            </button>
-            <button 
-              onClick={() => setGameMode('paid')}
-              className={gameMode === 'paid' ? 'active' : ''}
-              disabled={!wallet.connected}
-            >
-              Paid Mode
-            </button>
-          </div>
-        </header>
-
-        {wallet.connected && !gameState.gameStarted && (
-          <div className="game-popup">
-            <h2>Ready to Play?</h2>
-            <button 
-              onClick={handleGameStart}
-              disabled={paying}
-            >
-              {gameMode === 'paid' ? 'Pay 0.2 SUI and Start Game' : 'Start Free Game'}
-            </button>
-          </div>
-        )}
-
-        {!wallet.connected && (
-          <div className="game-popup">
-            <h2>Connect Wallet to Play</h2>
-            <p>Please connect your wallet to start playing</p>
-          </div>
-        )}
-
-        <canvas id="tearCatchGameCanvas" className="game-canvas" />
-
-        <div className="leaderboards-container">
-          {gameMode === 'paid' ? (
+      <div className="leaderboards-container">
+        {isLeaderboardLoading ? (
+          <div className="loading-indicator">Loading leaderboards...</div>
+        ) : (
+          gameMode === 'paid' ? (
             <>
               {renderLeaderboard(leaderboardData.mainPaid, 'Main Paid Leaderboard')}
               {renderLeaderboard(leaderboardData.secondaryPaid, 'Secondary Paid Leaderboard')}
@@ -285,32 +168,32 @@ return (
               {renderLeaderboard(leaderboardData.mainFree, 'Main Free Leaderboard')}
               {renderLeaderboard(leaderboardData.secondaryFree, 'Secondary Free Leaderboard')}
             </>
-          )}
-        </div>
-
-        {gameState.isGameOver && (
-          <div className="score-popup">
-            <h2>Game Over!</h2>
-            <p>Your Score: <span>{gameState.score}</span></p>
-            <button onClick={handleScoreSubmit}>Submit Score</button>
-            <button onClick={handleGameStart}>Play Again</button>
-          </div>
-        )}
-
-        {/* Development debug panel */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="debug-info">
-            <p>Wallet Connected: {String(wallet.connected)}</p>
-            <p>Wallet Name: {wallet.name || 'None'}</p>
-            <p>Wallet Address: {wallet.account?.address || 'None'}</p>
-            <p>Game Mode: {gameMode}</p>
-            <p>Game Started: {String(gameState.gameStarted)}</p>
-            <p>Score: {gameState.score}</p>
-          </div>
+          )
         )}
       </div>
-    </WalletProvider>
- );
+
+      {gameState.isGameOver && (
+        <div className="score-popup">
+          <h2>Game Over!</h2>
+          <p>Your Score: <span>{gameState.score}</span></p>
+          <button onClick={handleScoreSubmit}>Submit Score</button>
+          <button onClick={handleGameStart}>Play Again</button>
+        </div>
+      )}
+
+      {process.env.NODE_ENV === 'development' && (
+        <div className="debug-info">
+          <p>Wallet Connected: {String(wallet.connected)}</p>
+          <p>Wallet Initialized: {String(walletInitialized)}</p>
+          <p>Wallet Name: {wallet.name || 'None'}</p>
+          <p>Wallet Address: {wallet.account?.address || 'None'}</p>
+          <p>Game Mode: {gameMode}</p>
+          <p>Game Started: {String(gameState.gameStarted)}</p>
+          <p>Score: {gameState.score}</p>
+        </div>
+      )}
+    </div>
+  );
 };
 
 export default GameApp;
