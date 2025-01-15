@@ -1,12 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { WalletProvider, useWallet, SuiChainId, useSuiClient, ConnectButton } from '@suiet/wallet-kit';
-import { formatSUI } from '@suiet/wallet-kit';
+import { WalletProvider, useWallet, ConnectButton } from '@suiet/wallet-kit';
 import './App.css';
 
-// Main GameApp component
 const GameApp = () => {
-  const wallet = useWallet(); 
-  const client = useSuiClient();  
+  const wallet = useWallet();
   const [gameState, setGameState] = useState({
     gameStarted: false,
     score: 0,
@@ -18,27 +15,54 @@ const GameApp = () => {
     mainPaid: [],
     secondaryPaid: [],
   });
-  const [gameMode, setGameMode] = useState('free'); 
-  const [paying, setPaying] = useState(false); 
+  const [gameMode, setGameMode] = useState('free');
+  const [paying, setPaying] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
+  // Initialize game and handle wallet connection
   useEffect(() => {
-    const canvas = document.getElementById('tearCatchGameCanvas');
-    if (canvas) {
-      const ctx = canvas.getContext('2d');
-      canvas.width = canvas.parentNode.offsetWidth;
-      canvas.height = canvas.parentNode.offsetHeight;
-    }
-    fetchLeaderboards();
+    const initializeGame = async () => {
+      if (window.gameManager) {
+        const initialized = await window.gameManager.initialize();
+        setIsInitialized(initialized);
+      }
+    };
+    initializeGame();
   }, []);
+
+  // Update wallet address when connection changes
+  useEffect(() => {
+    if (wallet.connected && wallet.account) {
+      window.currentWalletAddress = wallet.account.address;
+    } else {
+      window.currentWalletAddress = null;
+    }
+  }, [wallet.connected, wallet.account]);
+
+  // Fetch leaderboards when wallet connects
+  useEffect(() => {
+    if (wallet.connected) {
+      fetchLeaderboards();
+    }
+  }, [wallet.connected]);
 
   const fetchLeaderboards = async () => {
     try {
+      const fetchWithTimeout = async (url) => {
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      };
+
       const [mainFreeData, secondaryFreeData, mainPaidData, secondaryPaidData] = await Promise.all([
-        fetch('https://ayagame.onrender.com/api/scores/leaderboard/main/free').then((res) => res.json()),
-        fetch('https://ayagame.onrender.com/api/scores/leaderboard/secondary/free').then((res) => res.json()),
-        fetch('https://ayagame.onrender.com/api/scores/leaderboard/main/paid').then((res) => res.json()),
-        fetch('https://ayagame.onrender.com/api/scores/leaderboard/secondary/paid').then((res) => res.json()),
+        fetchWithTimeout('https://ayagame.onrender.com/api/scores/leaderboard/main/free'),
+        fetchWithTimeout('https://ayagame.onrender.com/api/scores/leaderboard/secondary/free'),
+        fetchWithTimeout('https://ayagame.onrender.com/api/scores/leaderboard/main/paid'),
+        fetchWithTimeout('https://ayagame.onrender.com/api/scores/leaderboard/secondary/paid'),
       ]);
+
       setLeaderboardData({
         mainFree: mainFreeData,
         secondaryFree: secondaryFreeData,
@@ -47,6 +71,13 @@ const GameApp = () => {
       });
     } catch (error) {
       console.error('Error fetching leaderboards:', error);
+      // Set empty arrays if fetch fails
+      setLeaderboardData({
+        mainFree: [],
+        secondaryFree: [],
+        mainPaid: [],
+        secondaryPaid: [],
+      });
     }
   };
 
@@ -59,32 +90,42 @@ const GameApp = () => {
     if (gameMode === 'paid') {
       try {
         const balance = await wallet.getBalance();
-        const balanceInSUI = parseFloat(balance);
+        if (!balance) {
+          alert('Unable to fetch wallet balance');
+          return;
+        }
 
+        const balanceInSUI = parseFloat(balance);
         if (balanceInSUI < 0.2) {
           alert('Insufficient balance! You need 0.2 SUI to play a paid game.');
           return;
         }
 
-        const proceed = window.confirm('You need to pay 0.2 SUI to start the game. Proceed with payment?');
-        if (!proceed) return;
-
         setPaying(true);
-
         const recipient = '0xa376ef54b9d89db49e7eac089a4efca84755f6c325429af97a7ce9b3a549642a';
-        const tx = await wallet.signAndExecuteTransaction({
-          transaction: {
-            type: 'transfer',
-            recipient,
-            amount: 0.2,
-          },
-        });
+        
+        try {
+          const tx = await wallet.signAndExecuteTransaction({
+            transaction: {
+              kind: 'pay',
+              data: {
+                recipient: recipient,
+                amount: 0.2 * 1000000000, // Convert to MIST (SUI's smallest unit)
+              },
+            },
+          });
 
-        console.log('Payment successful:', tx);
-        startGame();
+          console.log('Payment successful:', tx);
+          startGame();
+        } catch (txError) {
+          console.error('Transaction failed:', txError);
+          alert('Payment failed. Please try again.');
+          setPaying(false);
+        }
       } catch (error) {
         console.error('Error during payment process:', error);
-        alert('Payment failed. Please try again later.');
+        alert('Error processing payment. Please try again.');
+        setPaying(false);
       }
     } else {
       startGame();
@@ -93,7 +134,7 @@ const GameApp = () => {
 
   const startGame = () => {
     setPaying(false);
-    setGameState((prev) => ({
+    setGameState(prev => ({
       ...prev,
       gameStarted: true,
       score: 0,
@@ -106,8 +147,7 @@ const GameApp = () => {
   };
 
   const handleScoreSubmit = async () => {
-    const walletAddress = window.currentWalletAddress;
-    if (!walletAddress) {
+    if (!wallet.connected || !wallet.account) {
       alert('Please connect your wallet first');
       return;
     }
@@ -119,7 +159,7 @@ const GameApp = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          playerWallet: walletAddress,
+          playerWallet: wallet.account.address,
           score: gameState.score,
           gameType: 'main',
         }),
@@ -137,78 +177,73 @@ const GameApp = () => {
     }
   };
 
-  const renderLeaderboard = (data, title) => (
-    <div className="leaderboard-section">
-      <h3>{title}</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Wallet</th>
-            <th>Score</th>
-          </tr>
-        </thead>
-        <tbody>
-          {(data || []).map((entry, index) => (
-            <tr key={index}>
-              <td>{`${entry.playerWallet.slice(0, 6)}...${entry.playerWallet.slice(-4)}`}</td>
-              <td>{entry.score}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
+  // ... rest of your component code (renderLeaderboard function, etc.)
 
   return (
-    <WalletProvider>
-      <div className="game-container">
-        <header>
-          <ConnectButton />
-        </header>
-
-        {!gameState.gameStarted && (
-          <div id="startGame" className="game-popup" style={{ display: 'block' }}>
-            <h2>Ready to Play?</h2>
-            <button onClick={handleGameStart}>
-              {gameMode === 'paid' ? 'Pay 0.2 SUI and Start Game' : 'Start Free Game'}
-            </button>
-          </div>
-        )}
-
-        <canvas id="tearCatchGameCanvas" className="game-canvas" />
-
-        <div className="leaderboards-container">
-          {gameMode === 'paid' ? (
-            <>
-              {renderLeaderboard(leaderboardData.mainPaid, 'Main Paid Leaderboard')}
-              {renderLeaderboard(leaderboardData.secondaryPaid, 'Secondary Paid Leaderboard')}
-            </>
-          ) : (
-            <>
-              {renderLeaderboard(leaderboardData.mainFree, 'Main Free Leaderboard')}
-              {renderLeaderboard(leaderboardData.secondaryFree, 'Secondary Free Leaderboard')}
-            </>
-          )}
+    <div className="game-container">
+      <header>
+        <ConnectButton />
+        <div className="mode-selector">
+          <button 
+            onClick={() => setGameMode('free')}
+            className={gameMode === 'free' ? 'active' : ''}
+          >
+            Free Mode
+          </button>
+          <button 
+            onClick={() => setGameMode('paid')}
+            className={gameMode === 'paid' ? 'active' : ''}
+          >
+            Paid Mode
+          </button>
         </div>
+      </header>
 
-        {gameState.isGameOver && (
-          <div id="scorePopup" className="score-popup" style={{ display: 'block' }}>
-            <h2>Game Over!</h2>
-            <p>Your Score: <span>{gameState.score}</span></p>
-            <button onClick={handleScoreSubmit}>Submit Score</button>
-          </div>
-        )}
+      {wallet.connected && !gameState.gameStarted && (
+        <div className="game-popup">
+          <h2>Ready to Play?</h2>
+          <button 
+            onClick={handleGameStart}
+            disabled={paying}
+          >
+            {gameMode === 'paid' ? 'Pay 0.2 SUI and Start Game' : 'Start Free Game'}
+          </button>
+        </div>
+      )}
 
-        {gameState.isGameOver && (
-          <div id="restartGame" className="restart-popup" style={{ display: 'block' }}>
-            <h2>Play Again?</h2>
-            <button onClick={handleGameStart}>Restart Game</button>
-          </div>
+      {!wallet.connected && (
+        <div className="game-popup">
+          <h2>Connect Wallet to Play</h2>
+          <p>Please connect your wallet to start playing</p>
+        </div>
+      )}
+
+      <canvas id="tearCatchGameCanvas" className="game-canvas" />
+
+      <div className="leaderboards-container">
+        {gameMode === 'paid' ? (
+          <>
+            {renderLeaderboard(leaderboardData.mainPaid, 'Main Paid Leaderboard')}
+            {renderLeaderboard(leaderboardData.secondaryPaid, 'Secondary Paid Leaderboard')}
+          </>
+        ) : (
+          <>
+            {renderLeaderboard(leaderboardData.mainFree, 'Main Free Leaderboard')}
+            {renderLeaderboard(leaderboardData.secondaryFree, 'Secondary Free Leaderboard')}
+          </>
         )}
       </div>
-    </WalletProvider>
+
+      {gameState.isGameOver && (
+        <div className="score-popup">
+          <h2>Game Over!</h2>
+          <p>Your Score: <span>{gameState.score}</span></p>
+          <button onClick={handleScoreSubmit}>Submit Score</button>
+          <button onClick={handleGameStart}>Play Again</button>
+        </div>
+      )}
+    </div>
   );
 };
 
 export default GameApp;
-
