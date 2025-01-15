@@ -166,53 +166,57 @@ const startGame = () => {
     }
   };
 
- const fetchLeaderboards = async () => {
-  setIsLeaderboardLoading(true); // Show loading state
-  console.log('Fetching leaderboards...'); // Debug log
+const fetchLeaderboards = async () => {
+  setIsLeaderboardLoading(true);
+  console.log('Fetching leaderboards...');
 
   try {
-    // Helper function that matches your original fetch approach
+    // Define our fetch function
     const fetchSingleLeaderboard = async (type) => {
-      const response = await fetch(`https://ayagame.onrender.com/api/scores/leaderboard/${type}/free`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
+      try {
+        const response = await fetch(`https://ayagame.onrender.com/api/scores/leaderboard/${type}/free`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          console.error(`Error fetching ${type} leaderboard: ${response.status}`);
+          return [];
         }
-      });
 
-      if (!response.ok) {
-        console.error(`HTTP error! status: ${response.status}`);
-        throw new Error(`Failed to fetch leaderboard: ${response.statusText}`);
+        const data = await response.json();
+        console.log(`${type} leaderboard data:`, data);
+        return data;
+      } catch (error) {
+        console.error(`Error fetching ${type} leaderboard:`, error);
+        return []; // Return empty array on error
       }
-
-      return response.json();
     };
 
-    // Fetch all leaderboards using your proven approach
-    const [mainFreeData, secondaryFreeData, mainPaidData, secondaryPaidData] = await Promise.all([
+    // Fetch all leaderboards
+    const results = await Promise.all([
       fetchSingleLeaderboard('main'),
       fetchSingleLeaderboard('secondary'),
-      fetchSingleLeaderboard('main'), // For paid leaderboards
-      fetchSingleLeaderboard('secondary')  // For paid leaderboards
+      fetchSingleLeaderboard('main'), // For paid
+      fetchSingleLeaderboard('secondary') // For paid
     ]);
 
-    // Update the state with fetched data
+    // Destructure results array
+    const [mainFreeData, secondaryFreeData, mainPaidData, secondaryPaidData] = results;
+
+    // Update state with the fetched data
     setLeaderboardData({
-      mainFree: mainFreeData || [],
-      secondaryFree: secondaryFreeData || [],
-      mainPaid: mainPaidData || [],
-      secondaryPaid: secondaryPaidData || []
+      mainFree: mainFreeData,
+      secondaryFree: secondaryFreeData,
+      mainPaid: mainPaidData,
+      secondaryPaid: secondaryPaidData
     });
 
-    console.log('Leaderboards fetched successfully:', {
-      mainFreeData,
-      secondaryFreeData,
-      mainPaidData,
-      secondaryPaidData
-    });
   } catch (error) {
-    console.error('Error fetching leaderboards:', error);
-    // Set empty arrays for all leaderboards on error
+    console.error('Overall leaderboard fetch error:', error);
+    // Set empty arrays if the fetch fails
     setLeaderboardData({
       mainFree: [],
       secondaryFree: [],
@@ -220,7 +224,7 @@ const startGame = () => {
       secondaryPaid: []
     });
   } finally {
-    setIsLeaderboardLoading(false); // Hide loading state
+    setIsLeaderboardLoading(false);
   }
 };
 
