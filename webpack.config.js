@@ -59,6 +59,7 @@ module.exports = {
     },
     client: {
       logging: 'none',  // Suppresses "Server started" messages
+      overlay: false,
     },
     hot: false,  // Disable hot module replacement
     liveReload: false,  // Disable live reload
