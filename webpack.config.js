@@ -14,25 +14,24 @@ module.exports = {
   devtool: process.env.NODE_ENV === 'production' ? 'source-map' : false,
 
   module: {
-    rules: [
-      {
-        test: /\.(js|jsx)$/,
-        exclude: /node_modules/,
-        use: {
-          loader: 'babel-loader',
-          options: {
-            presets: ['@babel/preset-env', '@babel/preset-react'],
-          },
+  rules: [
+    {
+      test: /\.(js|jsx)$/,
+      exclude: /node_modules/,
+      use: {
+        loader: 'babel-loader',
+        options: {
+          presets: ['@babel/preset-env', '@babel/preset-react'],
         },
       },
-      {
-        test: /\.css$/,
-        {
-      test: /\.css$/i,
+    },
+    {
+      test: /\.css$/i,   // This is the correct way to specify the test
       use: ['style-loader', 'css-loader'],
     },
-    ],
-  },
+  ],
+},
+
 
   resolve: {
     extensions: ['.js', '.jsx'],
