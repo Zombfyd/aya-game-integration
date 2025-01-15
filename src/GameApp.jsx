@@ -264,57 +264,6 @@ const fetchLeaderboards = async () => {
   }
 };
 
-    // Fetch each leaderboard separately to better track errors
-    const mainFreeData = await fetchWithTimeout('https://ayagame.onrender.com/api/scores/leaderboard/main/free')
-      .catch(error => {
-        console.error('Main free leaderboard error:', error);
-        return [];
-      });
-
-    const secondaryFreeData = await fetchWithTimeout('https://ayagame.onrender.com/api/scores/leaderboard/secondary/free')
-      .catch(error => {
-        console.error('Secondary free leaderboard error:', error);
-        return [];
-      });
-
-    const mainPaidData = await fetchWithTimeout('https://ayagame.onrender.com/api/scores/leaderboard/main/paid')
-      .catch(error => {
-        console.error('Main paid leaderboard error:', error);
-        return [];
-      });
-
-    const secondaryPaidData = await fetchWithTimeout('https://ayagame.onrender.com/api/scores/leaderboard/secondary/paid')
-      .catch(error => {
-        console.error('Secondary paid leaderboard error:', error);
-        return [];
-      });
-
-    console.log('All leaderboard data fetched:', {
-      mainFreeData,
-      secondaryFreeData,
-      mainPaidData,
-      secondaryPaidData
-    });
-
-    setLeaderboardData({
-      mainFree: mainFreeData || [],
-      secondaryFree: secondaryFreeData || [],
-      mainPaid: mainPaidData || [],
-      secondaryPaid: secondaryPaidData || []
-    });
-  } catch (error) {
-    console.error('Overall leaderboard fetch error:', error);
-    setLeaderboardData({
-      mainFree: [],
-      secondaryFree: [],
-      mainPaid: [],
-      secondaryPaid: []
-    });
-  } finally {
-    setIsLeaderboardLoading(false);
-  }
-};
-
   const renderLeaderboard = (data, title) => (
     <div className="leaderboard-section">
       <h3>{title}</h3>
