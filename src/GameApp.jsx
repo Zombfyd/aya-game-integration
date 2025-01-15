@@ -309,6 +309,7 @@ return (
         )}
       </div>
     </WalletProvider>
-  );
+ );
+};
 
 export default GameApp;
