@@ -136,7 +136,68 @@ const GameApp = () => {
       alert('Failed to submit score. Please try again.');
     }
   };
+ const fetchLeaderboards = async () => {
+    console.log('Fetching leaderboards...');
+    try {
+      // Add a timestamp to prevent caching
+      const timestamp = new Date().getTime();
+      const fetchWithTimeout = async (url) => {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+        
+        try {
+          const response = await fetch(`${url}?t=${timestamp}`, {
+            signal: controller.signal,
+            headers: {
+              'Cache-Control': 'no-cache',
+              'Pragma': 'no-cache'
+            }
+          });
+          clearTimeout(timeout);
+          
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          const data = await response.json();
+          console.log(`Fetched data for ${url}:`, data); // Debug log
+          return data;
+        } catch (error) {
+          clearTimeout(timeout);
+          throw error;
+        }
+      };
 
+      const [mainFreeData, secondaryFreeData, mainPaidData, secondaryPaidData] = await Promise.all([
+        fetchWithTimeout('https://ayagame.onrender.com/api/scores/leaderboard/main/free'),
+        fetchWithTimeout('https://ayagame.onrender.com/api/scores/leaderboard/secondary/free'),
+        fetchWithTimeout('https://ayagame.onrender.com/api/scores/leaderboard/main/paid'),
+        fetchWithTimeout('https://ayagame.onrender.com/api/scores/leaderboard/secondary/paid')
+      ]);
+
+      console.log('Setting leaderboard data:', {
+        mainFreeData,
+        secondaryFreeData,
+        mainPaidData,
+        secondaryPaidData
+      });
+
+      setLeaderboardData({
+        mainFree: mainFreeData || [],
+        secondaryFree: secondaryFreeData || [],
+        mainPaid: mainPaidData || [],
+        secondaryPaid: secondaryPaidData || []
+      });
+    } catch (error) {
+      console.error('Error fetching leaderboards:', error);
+      // Set empty arrays if fetch fails but don't throw the error
+      setLeaderboardData({
+        mainFree: [],
+        secondaryFree: [],
+        mainPaid: [],
+        secondaryPaid: []
+      });
+    }
+  };
   const renderLeaderboard = (data, title) => (
     <div className="leaderboard-section">
       <h3>{title}</h3>
