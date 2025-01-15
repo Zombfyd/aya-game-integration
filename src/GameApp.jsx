@@ -17,14 +17,12 @@ const GameApp = () => {
   });
   const [gameMode, setGameMode] = useState('free');
   const [paying, setPaying] = useState(false);
-  const [isInitialized, setIsInitialized] = useState(false);
 
   // Initialize game and handle wallet connection
   useEffect(() => {
     const initializeGame = async () => {
       if (window.gameManager) {
         const initialized = await window.gameManager.initialize();
-        setIsInitialized(initialized);
       }
     };
     initializeGame();
@@ -48,21 +46,12 @@ const GameApp = () => {
 
   const fetchLeaderboards = async () => {
     try {
-      const fetchWithTimeout = async (url) => {
-        const response = await fetch(url);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-      };
-
       const [mainFreeData, secondaryFreeData, mainPaidData, secondaryPaidData] = await Promise.all([
-        fetchWithTimeout('https://ayagame.onrender.com/api/scores/leaderboard/main/free'),
-        fetchWithTimeout('https://ayagame.onrender.com/api/scores/leaderboard/secondary/free'),
-        fetchWithTimeout('https://ayagame.onrender.com/api/scores/leaderboard/main/paid'),
-        fetchWithTimeout('https://ayagame.onrender.com/api/scores/leaderboard/secondary/paid'),
+        fetch('https://ayagame.onrender.com/api/scores/leaderboard/main/free').then((res) => res.json()),
+        fetch('https://ayagame.onrender.com/api/scores/leaderboard/secondary/free').then((res) => res.json()),
+        fetch('https://ayagame.onrender.com/api/scores/leaderboard/main/paid').then((res) => res.json()),
+        fetch('https://ayagame.onrender.com/api/scores/leaderboard/secondary/paid').then((res) => res.json()),
       ]);
-
       setLeaderboardData({
         mainFree: mainFreeData,
         secondaryFree: secondaryFreeData,
@@ -71,13 +60,6 @@ const GameApp = () => {
       });
     } catch (error) {
       console.error('Error fetching leaderboards:', error);
-      // Set empty arrays if fetch fails
-      setLeaderboardData({
-        mainFree: [],
-        secondaryFree: [],
-        mainPaid: [],
-        secondaryPaid: [],
-      });
     }
   };
 
@@ -90,12 +72,8 @@ const GameApp = () => {
     if (gameMode === 'paid') {
       try {
         const balance = await wallet.getBalance();
-        if (!balance) {
-          alert('Unable to fetch wallet balance');
-          return;
-        }
-
         const balanceInSUI = parseFloat(balance);
+
         if (balanceInSUI < 0.2) {
           alert('Insufficient balance! You need 0.2 SUI to play a paid game.');
           return;
@@ -200,69 +178,71 @@ const GameApp = () => {
   );
 
   return (
-    <div className="game-container">
-      <header>
-        <ConnectButton />
-        <div className="mode-selector">
-          <button 
-            onClick={() => setGameMode('free')}
-            className={gameMode === 'free' ? 'active' : ''}
-          >
-            Free Mode
-          </button>
-          <button 
-            onClick={() => setGameMode('paid')}
-            className={gameMode === 'paid' ? 'active' : ''}
-          >
-            Paid Mode
-          </button>
+    <WalletProvider>
+      <div className="game-container">
+        <header>
+          <ConnectButton />
+          <div className="mode-selector">
+            <button 
+              onClick={() => setGameMode('free')}
+              className={gameMode === 'free' ? 'active' : ''}
+            >
+              Free Mode
+            </button>
+            <button 
+              onClick={() => setGameMode('paid')}
+              className={gameMode === 'paid' ? 'active' : ''}
+            >
+              Paid Mode
+            </button>
+          </div>
+        </header>
+
+        {wallet.connected && !gameState.gameStarted && (
+          <div className="game-popup">
+            <h2>Ready to Play?</h2>
+            <button 
+              onClick={handleGameStart}
+              disabled={paying}
+            >
+              {gameMode === 'paid' ? 'Pay 0.2 SUI and Start Game' : 'Start Free Game'}
+            </button>
+          </div>
+        )}
+
+        {!wallet.connected && (
+          <div className="game-popup">
+            <h2>Connect Wallet to Play</h2>
+            <p>Please connect your wallet to start playing</p>
+          </div>
+        )}
+
+        <canvas id="tearCatchGameCanvas" className="game-canvas" />
+
+        <div className="leaderboards-container">
+          {gameMode === 'paid' ? (
+            <>
+              {renderLeaderboard(leaderboardData.mainPaid, 'Main Paid Leaderboard')}
+              {renderLeaderboard(leaderboardData.secondaryPaid, 'Secondary Paid Leaderboard')}
+            </>
+          ) : (
+            <>
+              {renderLeaderboard(leaderboardData.mainFree, 'Main Free Leaderboard')}
+              {renderLeaderboard(leaderboardData.secondaryFree, 'Secondary Free Leaderboard')}
+            </>
+          )}
         </div>
-      </header>
 
-      {wallet.connected && !gameState.gameStarted && (
-        <div className="game-popup">
-          <h2>Ready to Play?</h2>
-          <button 
-            onClick={handleGameStart}
-            disabled={paying}
-          >
-            {gameMode === 'paid' ? 'Pay 0.2 SUI and Start Game' : 'Start Free Game'}
-          </button>
-        </div>
-      )}
-
-      {!wallet.connected && (
-        <div className="game-popup">
-          <h2>Connect Wallet to Play</h2>
-          <p>Please connect your wallet to start playing</p>
-        </div>
-      )}
-
-      <canvas id="tearCatchGameCanvas" className="game-canvas" />
-
-      <div className="leaderboards-container">
-        {gameMode === 'paid' ? (
-          <>
-            {renderLeaderboard(leaderboardData.mainPaid, 'Main Paid Leaderboard')}
-            {renderLeaderboard(leaderboardData.secondaryPaid, 'Secondary Paid Leaderboard')}
-          </>
-        ) : (
-          <>
-            {renderLeaderboard(leaderboardData.mainFree, 'Main Free Leaderboard')}
-            {renderLeaderboard(leaderboardData.secondaryFree, 'Secondary Free Leaderboard')}
-          </>
+        {gameState.isGameOver && (
+          <div className="score-popup">
+            <h2>Game Over!</h2>
+            <p>Your Score: <span>{gameState.score}</span></p>
+            <button onClick={handleScoreSubmit}>Submit Score</button>
+            <button onClick={handleGameStart}>Play Again</button>
+          </div>
         )}
       </div>
-
-      {gameState.isGameOver && (
-        <div className="score-popup">
-          <h2>Game Over!</h2>
-          <p>Your Score: <span>{gameState.score}</span></p>
-          <button onClick={handleScoreSubmit}>Submit Score</button>
-          <button onClick={handleGameStart}>Play Again</button>
-        </div>
-      )}
-    </div>
+    </WalletProvider>
   );
 };
 
