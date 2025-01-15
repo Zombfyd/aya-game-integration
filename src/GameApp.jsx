@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useWallet, ConnectButton } from '@suiet/wallet-kit';
 import './App.css';
+import config from './config';
 
 const GameApp = () => {
   // Wallet hook and state management
@@ -58,7 +59,7 @@ const GameApp = () => {
     initializeGame();
   }, [walletInitialized]);
 
-  const handleGameStart = async () => {
+ const handleGameStart = async () => {
   if (!wallet.connected) {
     alert('Please connect your wallet first');
     return;
@@ -67,32 +68,47 @@ const GameApp = () => {
   if (gameMode === 'paid') {
     try {
       setPaying(true);
-      const recipient = '0xa376ef54b9d89db49e7eac089a4efca84755f6c325429af97a7ce9b3a549642a';
       
-      // Updated transaction format for Sui wallet kit
       try {
         const response = await wallet.signAndExecuteTransaction({
           transaction: {
             kind: 'moveCall',
             data: {
-              packageObjectId: '0x2',
-              module: 'pay',
-              function: 'split_and_transfer',
-              typeArguments: ['0x2::sui::SUI'],
+              packageObjectId: config.packageId,
+              module: 'payment',
+              function: 'pay_for_game',
+              typeArguments: [],
               arguments: [
-                recipient,
-                (0.2 * 1000000000).toString() // Convert to string to avoid precision issues
+                config.ownerAddress,  // Owner address from config
+                '200000000'  // 0.2 SUI in MIST
               ],
-              gasBudget: 10000,
+              gasBudget: 50000,
             }
           }
         });
         
-        console.log('Payment successful:', response);
-        startGame();
+        if (response?.effects?.status?.status === 'success') {
+          console.log('Payment successful:', response);
+          
+          // Get the payment event
+          const events = response.effects?.events || [];
+          const paymentEvent = events.find(e => 
+            e.type.includes('PaymentProcessed')
+          );
+          
+          if (paymentEvent) {
+            // Log payment details and start game
+            console.log('Payment confirmed:', paymentEvent);
+            startGame();
+          } else {
+            throw new Error('Payment event not found');
+          }
+        } else {
+          throw new Error('Transaction failed');
+        }
       } catch (txError) {
         console.error('Transaction failed:', txError);
-        alert('Payment failed. Please try again.');
+        alert('Payment failed. Please make sure you have enough SUI.');
         setPaying(false);
       }
     } catch (error) {
