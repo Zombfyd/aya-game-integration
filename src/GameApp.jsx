@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { WalletProvider, useWallet, SuiChainId, useSuiClient, ConnectButton } from '@suiet/wallet-kit';
-import { formatSUI } from '@suiet/wallet-kit';
+import { WalletProvider, useWallet, ConnectButton } from '@suiet/wallet-kit';
 import './App.css';
 
 // Main GameApp component
 const GameApp = () => {
   const wallet = useWallet(); // Access wallet via hook
-  const client = useSuiClient();  // Client to interact with Sui
   const [gameState, setGameState] = useState({
     gameStarted: false,
     score: 0,
@@ -16,7 +14,7 @@ const GameApp = () => {
     main: [],
     secondary: []
   });
-  const [gameMode, setGameMode] = useState('free'); // Tracks selected game mode
+  const [gameMode, setGameMode] = useState(null); // Tracks selected game mode (free or paid)
 
   // Initialize game components and leaderboards
   useEffect(() => {
@@ -156,9 +154,19 @@ const GameApp = () => {
           <ConnectButton />
         </header>
 
-        {!gameState.gameStarted && (
+        {/* Game Mode selection (if game hasn't started) */}
+        {!gameState.gameStarted && !gameMode && (
+          <div className="game-mode-selection">
+            <h2>Select Game Mode</h2>
+            <button onClick={() => setGameMode('free')}>Free Game</button>
+            <button onClick={() => setGameMode('paid')}>Paid Game</button>
+          </div>
+        )}
+
+        {/* Show start game popup if mode selected */}
+        {gameMode && !gameState.gameStarted && (
           <div id="startGame" className="game-popup" style={{ display: 'block' }}>
-            <h2>Ready to Play?</h2>
+            <h2>{gameMode === 'paid' ? 'Ready to play for a fee?' : 'Ready to Play?'}</h2>
             <button onClick={handleGameStart}>Start Game</button>
           </div>
         )}
@@ -190,4 +198,3 @@ const GameApp = () => {
 };
 
 export default GameApp;
-
