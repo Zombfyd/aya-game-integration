@@ -42,30 +42,31 @@ module.exports = {
 
   // Update devServer configuration for Render
   devServer: {
-    static: {
-      directory: path.join(__dirname, 'dist'),
+  static: {
+    directory: path.join(__dirname, 'dist'),
+  },
+  compress: true,
+  host: '0.0.0.0',
+  port: process.env.PORT || 9000,
+  historyApiFallback: true,
+  hot: true,
+  allowedHosts: 'all',
+  headers: {
+    'Access-Control-Allow-Origin': '*', // For CORS
+  },
+  client: {
+    overlay: {
+      errors: false, // Disable error overlays for runtime errors
+      warnings: false, // Disable warnings overlay
     },
-    compress: true,
-    host: '0.0.0.0',
-    port: process.env.PORT || 9000,
-    historyApiFallback: true,
-    hot: true,
-    allowedHosts: 'all', // Accept all hosts, critical for Render.
-    headers: {
-      'Access-Control-Allow-Origin': '*', // For CORS
-    },
-    client: {
-      overlay: {
-        errors: false, // Disable error overlays for runtime errors
-        warnings: false, // Disable warnings overlay
-      },
-      webSocketURL: {
-        hostname: '0.0.0.0',
-        port: process.env.PORT || 10000, // Use WebSocket URL dynamically
-        protocol: 'ws',
-      },
+    webSocketURL: {
+      hostname: '0.0.0.0',
+      port: process.env.PORT || 10000,
+      protocol: 'ws',
     },
   },
+},
+
 
   plugins: [
     new HtmlWebpackPlugin({
