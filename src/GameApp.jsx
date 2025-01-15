@@ -177,7 +177,27 @@ const GameApp = () => {
     }
   };
 
-  // ... rest of your component code (renderLeaderboard function, etc.)
+  const renderLeaderboard = (data, title) => (
+    <div className="leaderboard-section">
+      <h3>{title}</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Wallet</th>
+            <th>Score</th>
+          </tr>
+        </thead>
+        <tbody>
+          {(data || []).map((entry, index) => (
+            <tr key={index}>
+              <td>{`${entry.playerWallet.slice(0, 6)}...${entry.playerWallet.slice(-4)}`}</td>
+              <td>{entry.score}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 
   return (
     <div className="game-container">
