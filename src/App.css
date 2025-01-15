@@ -256,3 +256,62 @@ tr:hover {
     font-size: 0.9rem;
     font-weight: 500;
 }
+/* Add to your existing App.css */
+
+.wallet-status {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    margin: 0 1rem;
+}
+
+.wallet-status .connected {
+    color: #4CAF50;
+    font-weight: 500;
+}
+
+.wallet-status .disconnected {
+    color: #f44336;
+    font-weight: 500;
+}
+
+/* Loading state for leaderboards */
+.leaderboard-section.loading {
+    position: relative;
+    min-height: 200px;
+}
+
+.leaderboard-section.loading::after {
+    content: "Loading...";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #2054c9;
+    font-size: 1.2rem;
+}
+
+/* Error state for leaderboards */
+.leaderboard-section.error {
+    border: 1px solid #f44336;
+}
+
+.leaderboard-section.error::after {
+    content: "Error loading leaderboard";
+    color: #f44336;
+}
+
+/* Debug panel */
+.debug-info {
+    font-family: monospace;
+    background: rgba(240, 240, 240, 0.9) !important;
+    border-top: 2px solid #2054c9;
+    z-index: 1000;
+}
+
+.debug-info p {
+    margin: 5px 0;
+    font-size: 12px;
+}
