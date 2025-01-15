@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { WalletProvider, useWallet } from '@suiet/wallet-kit';
+import React, { useState, useEffect, useMemo } from 'react';
+import { WalletProvider, useWallet, SuiChainId, useSuiClient } from '@suiet/wallet-kit';
+import { formatSUI } from '@suiet/wallet-kit';
+import './App.css';
 
-// WalletManager component to handle wallet connection
+// WalletManager component
 const WalletManager = ({ onGameStart, onGameModeChange }) => {
   const wallet = useWallet();
   const [status, setStatus] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Handle wallet connection changes
+  // Handle wallet connection state
   useEffect(() => {
     if (wallet.connected) {
       window.currentWalletAddress = wallet.account?.address;
@@ -41,7 +43,7 @@ const WalletManager = ({ onGameStart, onGameModeChange }) => {
         {isProcessing 
           ? 'Connecting...' 
           : wallet.connected 
-            ? `${wallet.account?.address.slice(0, 6)}...${wallet.account?.address.slice(-4)}` 
+            ? `${wallet.account?.address.slice(0, 6)}...${wallet.account?.address.slice(-4)}`
             : 'Connect Wallet'
         }
       </button>
@@ -59,6 +61,7 @@ const WalletManager = ({ onGameStart, onGameModeChange }) => {
 // Main GameApp component
 const GameApp = () => {
   const wallet = useWallet(); // Access wallet via hook
+  const client = useSuiClient();  // Client to interact with Sui
   const [gameState, setGameState] = useState({
     gameStarted: false,
     score: 0,
@@ -68,19 +71,16 @@ const GameApp = () => {
     main: [],
     secondary: []
   });
-  const [gameMode, setGameMode] = useState('free'); // Tracks the selected game mode
+  const [gameMode, setGameMode] = useState('free'); // Tracks selected game mode
 
-  // Effect to initialize game components
+  // Initialize game components and leaderboards
   useEffect(() => {
-    // Initialize game canvas and other resources
     const canvas = document.getElementById('tearCatchGameCanvas');
     if (canvas) {
       const ctx = canvas.getContext('2d');
       canvas.width = canvas.parentNode.offsetWidth;
       canvas.height = canvas.parentNode.offsetHeight;
     }
-
-    // Fetch initial leaderboard data
     fetchLeaderboards();
   }, []);
 
@@ -91,7 +91,6 @@ const GameApp = () => {
         fetch('https://ayagame.onrender.com/api/scores/leaderboard/main/free').then(res => res.json()),
         fetch('https://ayagame.onrender.com/api/scores/leaderboard/secondary/free').then(res => res.json())
       ]);
-
       setLeaderboardData({
         main: mainData,
         secondary: secondaryData
@@ -109,24 +108,24 @@ const GameApp = () => {
     }
 
     if (gameMode === 'paid') {
-      // Check if user has enough SUI for payment
+      // Check balance using Suiet's getBalance API
       const balance = await wallet.getBalance();
       if (parseFloat(balance) < 0.2) {
         alert('Insufficient balance for paid game!');
         return;
       }
-      
-      // Initiate the payment (sending .2 SUI to the specified address)
+
+      // Handle payment transaction to play paid game
       try {
-        const transaction = await wallet.signAndExecuteTransaction({
+        const recipient = '0xa376ef54b9d89db49e7eac089a4efca84755f6c325429af97a7ce9b3a549642a';
+        const tx = await wallet.signAndExecuteTransaction({
           transaction: {
-            // Create transaction with the necessary parameters to send 0.2 SUI
-            amount: 0.2,
-            recipient: '0xa376ef54b9d89db49e7eac089a4efca84755f6c325429af97a7ce9b3a549642a',
-            type: 'send'
+            type: 'transfer',
+            recipient,
+            amount: 0.2
           }
         });
-        console.log('Payment for paid game successful', transaction);
+        console.log('Payment successful', tx);
       } catch (error) {
         console.error('Payment failed:', error);
         alert('Payment failed, please try again later.');
@@ -134,7 +133,7 @@ const GameApp = () => {
       }
     }
 
-    // Start the game after payment or for a free game
+    // Start the game after payment (if paid) or for a free game
     setGameState(prev => ({
       ...prev,
       gameStarted: true,
@@ -208,7 +207,7 @@ const GameApp = () => {
     <WalletProvider>
       <div className="game-container">
         <WalletManager onGameStart={handleGameStart} onGameModeChange={setGameMode} />
-        
+
         {!gameState.gameStarted && (
           <div id="startGame" className="game-popup" style={{ display: 'block' }}>
             <h2>Ready to Play?</h2>
