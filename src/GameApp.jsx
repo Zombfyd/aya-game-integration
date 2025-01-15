@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { WalletProvider, useWallet, SuiChainId, useSuiClient } from '@suiet/wallet-kit';
 import { formatSUI } from '@suiet/wallet-kit';
-import './App.css';
+import 'App.css';
 
 // WalletManager component
 const WalletManager = ({ onGameStart, onGameModeChange }) => {
