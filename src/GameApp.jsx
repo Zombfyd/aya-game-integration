@@ -166,52 +166,63 @@ const startGame = () => {
     }
   };
 
-  const fetchLeaderboards = async () => {
-  console.log('Starting leaderboard fetch...');
-  setIsLeaderboardLoading(true);
-  
-  try {
-    // Add timestamp to prevent caching
-    const timestamp = new Date().getTime();
-    
-    const fetchWithTimeout = async (url) => {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 5000);
-      
-      try {
-        console.log(`Fetching from ${url}...`);
-        const response = await fetch(`${url}?t=${timestamp}`, {
-          signal: controller.signal,
-          headers: {
-            'Cache-Control': 'no-cache',
-            'Pragma': 'no-cache',
-            'Accept': 'application/json'
-          }
-        });
-        clearTimeout(timeout);
-        
-        if (!response.ok) {
-          console.error(`Error response from ${url}:`, response.status, response.statusText);
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
+ const fetchLeaderboards = async () => {
+  setIsLeaderboardLoading(true); // Show loading state
+  console.log('Fetching leaderboards...'); // Debug log
 
-        const text = await response.text(); // Get response as text first
-        console.log(`Raw response from ${url}:`, text);
-        
-        try {
-          const data = JSON.parse(text);
-          console.log(`Parsed data from ${url}:`, data);
-          return data;
-        } catch (parseError) {
-          console.error(`JSON parse error for ${url}:`, parseError);
-          throw new Error(`Failed to parse JSON from ${url}`);
+  try {
+    // Helper function that matches your original fetch approach
+    const fetchSingleLeaderboard = async (type) => {
+      const response = await fetch(`https://ayagame.onrender.com/api/scores/leaderboard/${type}/free`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
         }
-      } catch (error) {
-        clearTimeout(timeout);
-        console.error(`Fetch error for ${url}:`, error);
-        throw error;
+      });
+
+      if (!response.ok) {
+        console.error(`HTTP error! status: ${response.status}`);
+        throw new Error(`Failed to fetch leaderboard: ${response.statusText}`);
       }
+
+      return response.json();
     };
+
+    // Fetch all leaderboards using your proven approach
+    const [mainFreeData, secondaryFreeData, mainPaidData, secondaryPaidData] = await Promise.all([
+      fetchSingleLeaderboard('main'),
+      fetchSingleLeaderboard('secondary'),
+      fetchSingleLeaderboard('main'), // For paid leaderboards
+      fetchSingleLeaderboard('secondary')  // For paid leaderboards
+    ]);
+
+    // Update the state with fetched data
+    setLeaderboardData({
+      mainFree: mainFreeData || [],
+      secondaryFree: secondaryFreeData || [],
+      mainPaid: mainPaidData || [],
+      secondaryPaid: secondaryPaidData || []
+    });
+
+    console.log('Leaderboards fetched successfully:', {
+      mainFreeData,
+      secondaryFreeData,
+      mainPaidData,
+      secondaryPaidData
+    });
+  } catch (error) {
+    console.error('Error fetching leaderboards:', error);
+    // Set empty arrays for all leaderboards on error
+    setLeaderboardData({
+      mainFree: [],
+      secondaryFree: [],
+      mainPaid: [],
+      secondaryPaid: []
+    });
+  } finally {
+    setIsLeaderboardLoading(false); // Hide loading state
+  }
+};
 
     // Fetch each leaderboard separately to better track errors
     const mainFreeData = await fetchWithTimeout('https://ayagame.onrender.com/api/scores/leaderboard/main/free')
