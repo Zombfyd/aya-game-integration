@@ -8,15 +8,16 @@ const GameApp = () => {
   const [gameState, setGameState] = useState({
     gameStarted: false,
     score: 0,
-    isGameOver: false
+    isGameOver: false,
   });
   const [leaderboardData, setLeaderboardData] = useState({
     main: [],
     secondary: [],
     mainPaid: [],
-    secondaryPaid: []
+    secondaryPaid: [],
   });
   const [gameMode, setGameMode] = useState(null); // Tracks selected game mode (free or paid)
+  const [triesRemaining, setTriesRemaining] = useState(5); // Tracks remaining tries for paid game
 
   // Initialize game components and leaderboards
   useEffect(() => {
@@ -33,23 +34,23 @@ const GameApp = () => {
   const fetchLeaderboards = async () => {
     try {
       const [mainData, secondaryData, mainPaidData, secondaryPaidData] = await Promise.all([
-        fetch('https://ayagame.onrender.com/api/scores/leaderboard/main/free').then(res => res.json()),
-        fetch('https://ayagame.onrender.com/api/scores/leaderboard/secondary/free').then(res => res.json()),
-        fetch('https://ayagame.onrender.com/api/scores/leaderboard/main/paid').then(res => res.json()),
-        fetch('https://ayagame.onrender.com/api/scores/leaderboard/secondary/paid').then(res => res.json())
+        fetch('https://ayagame.onrender.com/api/scores/leaderboard/main/free').then((res) => res.json()),
+        fetch('https://ayagame.onrender.com/api/scores/leaderboard/secondary/free').then((res) => res.json()),
+        fetch('https://ayagame.onrender.com/api/scores/leaderboard/main/paid').then((res) => res.json()),
+        fetch('https://ayagame.onrender.com/api/scores/leaderboard/secondary/paid').then((res) => res.json()),
       ]);
       setLeaderboardData({
         main: mainData,
         secondary: secondaryData,
         mainPaid: mainPaidData,
-        secondaryPaid: secondaryPaidData
+        secondaryPaid: secondaryPaidData,
       });
     } catch (error) {
       console.error('Error fetching leaderboards:', error);
     }
   };
 
-  // Handle game start
+  // Handle game start (check wallet and tries)
   const handleGameStart = async () => {
     if (!wallet.connected) {
       alert('Please connect your wallet first');
@@ -57,40 +58,51 @@ const GameApp = () => {
     }
 
     if (gameMode === 'paid') {
-      // Check balance using Suiet's getBalance API
-      try {
-        const balance = await wallet.getBalance();
-        if (parseFloat(balance) < 0.2) {
-          alert('Insufficient balance for paid game!');
-          return;
-        }
-
-        // Handle payment transaction to play paid game
-        const recipient = '0xa376ef54b9d89db49e7eac089a4efca84755f6c325429af97a7ce9b3a549642a';
-        const tx = await wallet.signAndExecuteTransaction({
-          transaction: {
-            type: 'transfer',
-            recipient,
-            amount: 0.2
+      // Check if the user has remaining tries to play the paid game
+      if (triesRemaining > 0) {
+        setTriesRemaining((prev) => prev - 1); // Decrease tries remaining
+        startGame();
+      } else {
+        // If no tries remaining, ask for payment again
+        alert('You have no tries left! Please make a payment to continue.');
+        try {
+          const balance = await wallet.getBalance();
+          if (parseFloat(balance) < 0.2) {
+            alert('Insufficient balance for paid game!');
+            return;
           }
-        });
-        console.log('Payment successful', tx);
-      } catch (error) {
-        console.error('Payment failed:', error);
-        alert('Payment failed, please try again later.');
-        return;
+          // Handle payment transaction to play the paid game
+          const recipient = '0xa376ef54b9d89db49e7eac089a4efca84755f6c325429af97a7ce9b3a549642a';
+          const tx = await wallet.signAndExecuteTransaction({
+            transaction: {
+              type: 'transfer',
+              recipient,
+              amount: 0.2,
+            },
+          });
+          console.log('Payment successful', tx);
+          setTriesRemaining(4); // Reset tries after payment
+          startGame();
+        } catch (error) {
+          console.error('Payment failed:', error);
+          alert('Payment failed, please try again later.');
+        }
       }
+    } else {
+      // Start the free game without any checks
+      startGame();
     }
+  };
 
-    // Start the game after payment (if paid) or for a free game
-    setGameState(prev => ({
-      ...prev,
+  // Start game after mode/payment validation
+  const startGame = () => {
+    setGameState({
+      ...gameState,
       gameStarted: true,
       score: 0,
-      isGameOver: false
-    }));
-
-    // Initialize game logic here (depending on mode)
+      isGameOver: false,
+    });
+    // Start the game logic here (in real scenario, integrate game logic manager)
     if (window.gameManager) {
       window.gameManager.startGame(gameMode); // Pass gameMode to game manager
     }
@@ -103,18 +115,17 @@ const GameApp = () => {
       alert('Please connect your wallet first');
       return;
     }
-
     try {
       const response = await fetch('https://ayagame.onrender.com/api/scores/submit/free', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           playerWallet: walletAddress,
           score: gameState.score,
-          gameType: 'main'
-        })
+          gameType: 'main',
+        }),
       });
 
       if (response.ok) {
@@ -156,11 +167,10 @@ const GameApp = () => {
     <WalletProvider>
       <div className="game-container">
         <header>
-          {/* Connect button placed in the header */}
           <ConnectButton />
         </header>
 
-        {/* Game Mode selection (if game hasn't started) */}
+        {/* Game Mode selection (if game hasn't started yet) */}
         {!gameState.gameStarted && !gameMode && (
           <div className="game-mode-selection">
             <h2>Select Game Mode</h2>
@@ -169,11 +179,13 @@ const GameApp = () => {
           </div>
         )}
 
-        {/* Show start game popup if mode selected */}
+        {/* Game start options after selecting the mode */}
         {gameMode && !gameState.gameStarted && (
           <div id="startGame" className="game-popup" style={{ display: 'block' }}>
-            <h2>{gameMode === 'paid' ? 'Ready to play for a fee?' : 'Ready to Play?'}</h2>
-            <button onClick={handleGameStart}>Start Game</button>
+            <h2>{gameMode === 'paid' ? `You have ${triesRemaining} tries left` : 'Ready to Play?'}</h2>
+            <button onClick={handleGameStart}>
+              {gameMode === 'paid' ? 'Start Paid Game' : 'Start Free Game'}
+            </button>
           </div>
         )}
 
