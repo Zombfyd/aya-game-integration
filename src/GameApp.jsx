@@ -163,7 +163,7 @@ const GameApp = () => {
         </tr>
       </thead>
       <tbody>
-        {data.map((entry, index) => (
+        {(data || []).map((entry, index) => (
           <tr key={index}>
             <td>{`${entry.playerWallet.slice(0, 6)}...${entry.playerWallet.slice(-4)}`}</td>
             <td>{entry.score}</td>
@@ -173,6 +173,7 @@ const GameApp = () => {
     </table>
   </div>
 );
+
 
 
   return (
