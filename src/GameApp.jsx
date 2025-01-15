@@ -252,10 +252,63 @@ return (
           </div>
         </header>
 
-        {/* Rest of your JSX remains the same */}
+        {wallet.connected && !gameState.gameStarted && (
+          <div className="game-popup">
+            <h2>Ready to Play?</h2>
+            <button 
+              onClick={handleGameStart}
+              disabled={paying}
+            >
+              {gameMode === 'paid' ? 'Pay 0.2 SUI and Start Game' : 'Start Free Game'}
+            </button>
+          </div>
+        )}
+
+        {!wallet.connected && (
+          <div className="game-popup">
+            <h2>Connect Wallet to Play</h2>
+            <p>Please connect your wallet to start playing</p>
+          </div>
+        )}
+
+        <canvas id="tearCatchGameCanvas" className="game-canvas" />
+
+        <div className="leaderboards-container">
+          {gameMode === 'paid' ? (
+            <>
+              {renderLeaderboard(leaderboardData.mainPaid, 'Main Paid Leaderboard')}
+              {renderLeaderboard(leaderboardData.secondaryPaid, 'Secondary Paid Leaderboard')}
+            </>
+          ) : (
+            <>
+              {renderLeaderboard(leaderboardData.mainFree, 'Main Free Leaderboard')}
+              {renderLeaderboard(leaderboardData.secondaryFree, 'Secondary Free Leaderboard')}
+            </>
+          )}
+        </div>
+
+        {gameState.isGameOver && (
+          <div className="score-popup">
+            <h2>Game Over!</h2>
+            <p>Your Score: <span>{gameState.score}</span></p>
+            <button onClick={handleScoreSubmit}>Submit Score</button>
+            <button onClick={handleGameStart}>Play Again</button>
+          </div>
+        )}
+
+        {/* Development debug panel */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="debug-info">
+            <p>Wallet Connected: {String(wallet.connected)}</p>
+            <p>Wallet Name: {wallet.name || 'None'}</p>
+            <p>Wallet Address: {wallet.account?.address || 'None'}</p>
+            <p>Game Mode: {gameMode}</p>
+            <p>Game Started: {String(gameState.gameStarted)}</p>
+            <p>Score: {gameState.score}</p>
+          </div>
+        )}
       </div>
     </WalletProvider>
   );
-};
 
 export default GameApp;
