@@ -12,7 +12,9 @@ const GameApp = () => {
   });
   const [leaderboardData, setLeaderboardData] = useState({
     main: [],
-    secondary: []
+    secondary: [],
+    mainPaid: [],
+    secondaryPaid: []
   });
   const [gameMode, setGameMode] = useState(null); // Tracks selected game mode (free or paid)
 
@@ -30,13 +32,17 @@ const GameApp = () => {
   // Function to fetch leaderboard data
   const fetchLeaderboards = async () => {
     try {
-      const [mainData, secondaryData] = await Promise.all([
+      const [mainData, secondaryData, mainPaidData, secondaryPaidData] = await Promise.all([
         fetch('https://ayagame.onrender.com/api/scores/leaderboard/main/free').then(res => res.json()),
-        fetch('https://ayagame.onrender.com/api/scores/leaderboard/secondary/free').then(res => res.json())
+        fetch('https://ayagame.onrender.com/api/scores/leaderboard/secondary/free').then(res => res.json()),
+        fetch('https://ayagame.onrender.com/api/scores/leaderboard/main/paid').then(res => res.json()),
+        fetch('https://ayagame.onrender.com/api/scores/leaderboard/secondary/paid').then(res => res.json())
       ]);
       setLeaderboardData({
         main: mainData,
-        secondary: secondaryData
+        secondary: secondaryData,
+        mainPaid: mainPaidData,
+        secondaryPaid: secondaryPaidData
       });
     } catch (error) {
       console.error('Error fetching leaderboards:', error);
@@ -124,10 +130,10 @@ const GameApp = () => {
   };
 
   // Render leaderboard table
-  const renderLeaderboard = (data, title) => (
-    <div className="leaderboard-section">
+  const renderLeaderboard = (data, title, isPaid = false) => (
+    <div className="leaderboard-wrapper">
       <h3>{title}</h3>
-      <table>
+      <table id={isPaid ? `mainPaidLeaderboard` : `mainLeaderboard`}>
         <thead>
           <tr>
             <th>Wallet</th>
@@ -173,9 +179,20 @@ const GameApp = () => {
 
         <canvas id="tearCatchGameCanvas" className="game-canvas" />
 
-        <div className="leaderboards-container">
-          {renderLeaderboard(leaderboardData.main, 'Main Leaderboard')}
-          {renderLeaderboard(leaderboardData.secondary, 'Secondary Leaderboard')}
+        <div className="leaderboard-container">
+          {/* Free Game Leaderboards */}
+          <div className="leaderboard-section">
+            <h2>Free Game Leaderboards</h2>
+            {renderLeaderboard(leaderboardData.main, 'Main Leaderboard')}
+            {renderLeaderboard(leaderboardData.secondary, 'Secondary Leaderboard')}
+          </div>
+
+          {/* Paid Game Leaderboards */}
+          <div className="leaderboard-section">
+            <h2>Paid Game Leaderboards</h2>
+            {renderLeaderboard(leaderboardData.mainPaid, 'Main Leaderboard', true)}
+            {renderLeaderboard(leaderboardData.secondaryPaid, 'Secondary Leaderboard', true)}
+          </div>
         </div>
 
         {gameState.isGameOver && (
