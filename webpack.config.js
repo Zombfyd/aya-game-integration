@@ -51,7 +51,7 @@ module.exports = {
     minimize: process.env.NODE_ENV === 'production', // Minify in production
   },
 
-  mode: process.env.NODE_ENV || 'development',
+  mode: process.env.NODE_ENV || 'production',
 
   devServer: {
     static: {
