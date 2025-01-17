@@ -9,7 +9,7 @@ const GameApp = () => {
   const wallet = useWallet();
   const [walletInitialized, setWalletInitialized] = useState(false);
   const [isLeaderboardLoading, setIsLeaderboardLoading] = useState(false);
-  
+  const [transactionInProgress, setTransactionInProgress] = useState(false);
   // Game state management
   const [gameState, setGameState] = useState({
     gameStarted: false,
@@ -69,52 +69,65 @@ const handleGameStart = async () => {
   if (gameMode === 'paid') {
     try {
       setPaying(true);
+      setTransactionInProgress(true);
+      // Get coins owned by the wallet
+      const coins = await wallet.getCoins({
+  owner: wallet.account.address,
+  coinType: '0x2::sui::SUI'  // Specify SUI coin type
+});
       
-      try {
-        const response = await wallet.signAndExecuteTransaction({
-          transaction: {
-            kind: 'moveCall',
-            data: {
-              packageObjectId: '0x4bfa52ee471bd01ea0ade83a343de62a4c500f9adc375eb4426a92042887b13d',
-              module: 'payment',
-              function: 'pay_for_game',
-              typeArguments: [],
-              arguments: [
-                // Your wallet address that will receive the payments
-                0xa376ef54b9d89db49e7eac089a4efca84755f6c325429af97a7ce9b3a549642a,
-                '200000000'  // 0.2 SUI in MIST
-              ],
-              gasBudget: 2000000,
-            }
-          }
-        });
-        
-        if (response?.effects?.status?.status === 'success') {
-          console.log('Payment successful:', response);
-          const events = response.effects?.events || [];
-          const paymentEvent = events.find(e => 
-            e.type.includes('PaymentProcessed')
-          );
-          
-          if (paymentEvent) {
-            console.log('Payment confirmed:', paymentEvent);
-            startGame();
-          } else {
-            throw new Error('Payment event not found');
-          }
-        } else {
-          throw new Error('Transaction failed');
-        }
-      } catch (txError) {
-        console.error('Transaction failed:', txError);
-        alert('Payment failed. Please make sure you have enough SUI.');
-        setPaying(false);
+      // Find a coin with sufficient balance
+      const coin = coins.find(c => c.balance >= 200000000);
+      if (!coin) {
+        throw new Error('Insufficient balance');
       }
-    } catch (error) {
-      console.error('Error during payment process:', error);
-      alert('Error processing payment. Please try again.');
-      setPaying(false);
+
+      try {
+  const response = await wallet.signAndExecuteTransaction({
+    transaction: {
+      kind: 'moveCall',
+      data: {
+        packageObjectId: '0x4bfa52ee471bd01ea0ade83a343de62a4c500f9adc375eb4426a92042887b13d',
+        module: 'payment',
+        function: 'pay_for_game',
+        typeArguments: ['0x2::sui::SUI'],
+        arguments: [
+          coin.coinObjectId,
+          '0xa376ef54b9d89db49e7eac089a4efca84755f6c325429af97a7ce9b3a549642a'
+        ],
+        gasBudget: 2000000,
+      }
     }
+  });
+  
+  console.log('Transaction response:', response); // Add detailed logging
+  
+  if (response?.effects?.status?.status === 'success') {
+    // Check for payment event
+    const events = response.effects?.events || [];
+    const paymentEvent = events.find(e => 
+      e.type.includes('PaymentProcessed')
+    );
+    
+    if (paymentEvent) {
+      console.log('Payment event found:', paymentEvent);
+      startGame();
+      setTransactionInProgress(false); 
+    } else {
+      console.warn('No payment event found in transaction');
+      startGame(); // Still start game as transaction was successful
+      setTransactionInProgress(false); 
+    }
+  } else {
+    console.error('Transaction failed:', response?.effects?.status);
+    throw new Error('Transaction failed: ' + (response?.effects?.status?.error || 'Unknown error'));
+  }
+} catch (txError) {
+  console.error('Detailed error:', txError);
+  alert('Payment failed: ' + (txError.message || 'Please make sure you have enough SUI.'));
+  setPaying(false);
+  setTransactionInProgress(false);
+}
   } else {
     startGame();
   }
@@ -343,7 +356,12 @@ const fetchLeaderboards = async () => {
           </button>
         </div>
       )}
-
+      {/* Add the new transaction status here */}
+      {gameMode === 'paid' && transactionInProgress && (
+        <div className="transaction-status">
+          Transaction in progress...
+        </div>
+      )}
       {!wallet.connected && (
         <div className="game-popup">
           <h2>Connect Wallet to Play</h2>
