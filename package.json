@@ -29,7 +29,7 @@
   },
   "scripts": {
     "start": "node server.js",
-    "build": "webpack --mode production"
+    "build": "webpack --mode production",
     "render-build": "webpack --mode production"
   },
   "engines": {
