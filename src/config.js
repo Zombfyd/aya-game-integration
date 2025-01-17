@@ -1,4 +1,3 @@
-// config.js
 const config = {
     development: {
         packageId: process.env.REACT_APP_PACKAGE_ID || 'YOUR_LOCAL_PACKAGE_ID',
