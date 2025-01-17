@@ -79,11 +79,11 @@ const handleGameStart = async () => {
       setTransactionInProgress(true);
       
       // Get coins owned by the wallet
-      const coins = await wallet.getBalance();
+      const coins = await wallet.getCoins({
+  owner: wallet.account.address,
+  coinType: '0x2::sui::SUI'  // Specify SUI coin type
+});
 
-        owner: wallet.account.address,
-        coinType: '0x2::sui::SUI'  // Specify SUI coin type
-      });
       
       // Find a coin with sufficient balance
       const coin = coins.find(c => c.balance >= 200000000);
