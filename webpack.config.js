@@ -37,6 +37,13 @@ module.exports = {
   },
 
   plugins: [
+    new webpack.DefinePlugin({
+            'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
+            'process.env.LOCAL_PACKAGE_ID': JSON.stringify(process.env.LOCAL_PACKAGE_ID || 'YOUR_LOCAL_PACKAGE_ID'),
+            'process.env.LOCAL_OWNER_ADDRESS': JSON.stringify(process.env.LOCAL_OWNER_ADDRESS || 'YOUR_LOCAL_OWNER_ADDRESS'),
+            'process.env.REACT_APP_PACKAGE_ID': JSON.stringify(process.env.REACT_APP_PACKAGE_ID),
+            'process.env.REACT_APP_OWNER_ADDRESS': JSON.stringify(process.env.REACT_APP_OWNER_ADDRESS),
+        })
     new HtmlWebpackPlugin({
       template: path.resolve(__dirname, 'docs', 'index.html'),
       filename: 'index.html',
