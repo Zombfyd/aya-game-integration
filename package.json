@@ -28,6 +28,7 @@
     "css-loader": "^6.5.1"
   },
   "scripts": {
+    "install": "npm install --include=dev",
     "start": "webpack serve --mode development",
     "build": "webpack --mode production",
     "render-build": "webpack --mode production"
