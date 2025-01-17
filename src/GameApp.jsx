@@ -74,7 +74,8 @@ const handleGameStart = async () => {
       setTransactionInProgress(true);
       
       // Get coins owned by the wallet
-      const coins = await wallet.getCoins({
+      const coins = await wallet.getBalance();
+
         owner: wallet.account.address,
         coinType: '0x2::sui::SUI'  // Specify SUI coin type
       });
