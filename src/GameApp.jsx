@@ -331,18 +331,18 @@ const fetchLeaderboards = async () => {
         </div>
         <div className="mode-selector">
           <button 
-            onClick={() => setGameMode('free')
+            onClick={() => setGameMode('free')}
             setTransactionInProgress(false);
-            setPaying(false);}
+            setPaying(false);}}
             className={gameMode === 'free' ? 'active' : ''}
             disabled={!wallet.connected}
           >
             Free Mode
           </button>
           <button 
-            onClick={() => setGameMode('paid')
+            onClick={() => setGameMode('paid')}
             setTransactionInProgress(false);
-            setPaying(false);}
+            setPaying(false);}}
             className={gameMode === 'paid' ? 'active' : ''}
             disabled={!wallet.connected}
           >
