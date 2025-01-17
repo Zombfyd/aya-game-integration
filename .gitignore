@@ -1,0 +1,31 @@
+# Node.js
+node_modules/
+
+# Build directories
+/build
+/dist
+/coverage
+
+# Local environment files
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+
+# IDE/editor folders
+/.idea
+/.vscode
+/.editorconfig
+
+# npm packages cache
+.npm
+
+# React specific files
+/.cache
+/*.tgz
