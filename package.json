@@ -28,8 +28,8 @@
     "css-loader": "^6.5.1"
   },
   "scripts": {
-    "start": "webpack serve --mode development",
-    "build": "webpack --mode production",
+    "start": "node server.js",
+    "build": "webpack --mode production"
     "render-build": "webpack --mode production"
   },
   "engines": {
