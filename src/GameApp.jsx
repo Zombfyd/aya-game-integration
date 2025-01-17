@@ -52,17 +52,19 @@ const GameApp = () => {
 
   // Initialize game when wallet is ready
   useEffect(() => {
-    const initializeGame = async () => {
+  const initializeGame = async () => {
+    try {
       if (window.gameManager && walletInitialized) {
         await window.gameManager.initialize();
-      } catch (error) {
-        console.error("Failed to initialize game:", error);
       }
-      }
-    };
+    } catch (error) {
+      console.error("Failed to initialize game:", error);
+    }
+  };
 
-    initializeGame();
-  }, [walletInitialized]);
+  initializeGame();
+}, [walletInitialized]);
+
 
 // In your handleGameStart function, update the payment transaction:
 const handleGameStart = async () => {
