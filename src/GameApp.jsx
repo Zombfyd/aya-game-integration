@@ -23,6 +23,13 @@ const GameApp = () => {
     secondaryPaid: [],
   });
   const [gameMode, setGameMode] = useState('free');
+  const setGameMode = (mode) => {
+  setGameMode(mode);
+  setTransactionInProgress(false);
+  setPaying(false);
+};
+
+  
   const [paying, setPaying] = useState(false);
 
   // Enhanced wallet connection monitoring
