@@ -2,7 +2,7 @@ services:
   - type: web
     name: aya-game
     env: static
-    buildCommand: npm install && npm run render-build
+    buildCommand: npm install && npm run build
     staticPublishPath: ./dist
     envVars:
       - key: NODE_VERSION
