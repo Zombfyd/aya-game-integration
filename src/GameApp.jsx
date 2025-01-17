@@ -55,6 +55,9 @@ const GameApp = () => {
     const initializeGame = async () => {
       if (window.gameManager && walletInitialized) {
         await window.gameManager.initialize();
+      } catch (error) {
+        console.error("Failed to initialize game:", error);
+      }
       }
     };
 
