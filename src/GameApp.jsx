@@ -59,7 +59,8 @@ const GameApp = () => {
     initializeGame();
   }, [walletInitialized]);
 
- const handleGameStart = async () => {
+// In your handleGameStart function, update the payment transaction:
+const handleGameStart = async () => {
   if (!wallet.connected) {
     alert('Please connect your wallet first');
     return;
@@ -74,30 +75,28 @@ const GameApp = () => {
           transaction: {
             kind: 'moveCall',
             data: {
-              packageObjectId: config.packageId,
+              packageObjectId: '0x4bfa52ee471bd01ea0ade83a343de62a4c500f9adc375eb4426a92042887b13d',
               module: 'payment',
               function: 'pay_for_game',
               typeArguments: [],
               arguments: [
-                config.ownerAddress,  // Owner address from config
+                // Your wallet address that will receive the payments
+                wallet.account.address,
                 '200000000'  // 0.2 SUI in MIST
               ],
-              gasBudget: 50000,
+              gasBudget: 2000000,
             }
           }
         });
         
         if (response?.effects?.status?.status === 'success') {
           console.log('Payment successful:', response);
-          
-          // Get the payment event
           const events = response.effects?.events || [];
           const paymentEvent = events.find(e => 
             e.type.includes('PaymentProcessed')
           );
           
           if (paymentEvent) {
-            // Log payment details and start game
             console.log('Payment confirmed:', paymentEvent);
             startGame();
           } else {
