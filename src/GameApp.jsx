@@ -81,7 +81,7 @@ const handleGameStart = async () => {
               typeArguments: [],
               arguments: [
                 // Your wallet address that will receive the payments
-                wallet.account.address,
+                0xa376ef54b9d89db49e7eac089a4efca84755f6c325429af97a7ce9b3a549642a,
                 '200000000'  // 0.2 SUI in MIST
               ],
               gasBudget: 2000000,
