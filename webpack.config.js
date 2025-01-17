@@ -7,9 +7,10 @@ module.exports = {
   output: {
     filename: 'game-bundle.js',
     path: path.resolve(__dirname, 'dist'),
-    publicPath: '/', // Keep this if you're serving static files from root
+    publicPath: '/',  // Ensure this is needed for your project setup
   },
 
+  // Use source map only in production environment
   devtool: process.env.NODE_ENV === 'production' ? 'source-map' : false,
 
   module: {
@@ -26,7 +27,7 @@ module.exports = {
       },
       {
         test: /\.css$/i,
-        use: [MiniCssExtractPlugin.loader, 'css-loader'], // Using MiniCssExtractPlugin.loader for production
+        use: ['style-loader', 'css-loader'],
       },
     ],
   },
@@ -52,19 +53,18 @@ module.exports = {
 
   mode: process.env.NODE_ENV || 'production',
 
-  // Only use `devServer` in local development.
-  devServer: process.env.NODE_ENV === 'development' ? {
+  devServer: {
     static: {
-      directory: path.join(__dirname, 'dist'),
+      directory: path.join(__dirname, 'dist'),  // Ensure Webpack can serve static files correctly
     },
     client: {
-      logging: 'none',
+      logging: 'none',  // Suppresses "Server started" messages
       overlay: false,
     },
-    hot: false,
-    liveReload: false,
-    allowedHosts: 'all',
-    host: '0.0.0.0',
-    port: 3000,
-  } : {},
+    hot: false,  // Disable hot module replacement
+    liveReload: false,  // Disable live reload
+    allowedHosts: 'all',  // Allow requests from all hosts to fix the "Invalid Host header" error
+    host: '0.0.0.0',  // Allow incoming connections from any IP address
+    port: 3000,  // Define your preferred port
+  },
 };
