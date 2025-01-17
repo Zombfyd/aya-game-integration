@@ -23,12 +23,7 @@ const GameApp = () => {
     secondaryPaid: [],
   });
   const [gameMode, setGameMode] = useState('free');
-  const setGameMode = (mode) => {
-  setGameMode(mode);
-  setTransactionInProgress(false);
-  setPaying(false);
-};
-
+  
   
   const [paying, setPaying] = useState(false);
 
@@ -337,6 +332,8 @@ const fetchLeaderboards = async () => {
         <div className="mode-selector">
           <button 
             onClick={() => setGameMode('free')}
+            setTransactionInProgress(false);
+            setPaying(false);
             className={gameMode === 'free' ? 'active' : ''}
             disabled={!wallet.connected}
           >
@@ -344,6 +341,8 @@ const fetchLeaderboards = async () => {
           </button>
           <button 
             onClick={() => setGameMode('paid')}
+            setTransactionInProgress(false);
+            setPaying(false);
             className={gameMode === 'paid' ? 'active' : ''}
             disabled={!wallet.connected}
           >
