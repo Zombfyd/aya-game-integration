@@ -11,4 +11,4 @@ const config = {
     }
 };
 
-export default config[process.env.NODE_ENV || 'development'];
+export default config[process.env.REACT_APP_ENVIRONMENT || 'development'];
