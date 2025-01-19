@@ -118,8 +118,6 @@ const GameApp = () => {
 
 
 
-import { Transaction } from "@mysten/sui/transactions";
-
 const handleGameStart = async () => {
   if (!wallet.connected) {
     alert('Please connect your wallet first');
