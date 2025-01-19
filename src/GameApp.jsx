@@ -118,6 +118,8 @@ const GameApp = () => {
 
 
 
+import { Transaction } from "@mysten/sui/transactions";
+
 const handleGameStart = async () => {
   if (!wallet.connected) {
     alert('Please connect your wallet first');
@@ -130,46 +132,31 @@ const handleGameStart = async () => {
       setTransactionInProgress(true);
       
       console.log('Initiating payment transaction...');
-      console.log('Using config:', {
-        packageId: config.packageId,
-        ownerAddress: config.ownerAddress,
-        network: config.network
-      });
 
-      // Verify configuration
-      if (!config.packageId || config.packageId === 'YOUR_LOCAL_PACKAGE_ID') {
-        throw new Error('Invalid package ID configuration');
-      }
-      if (!config.ownerAddress || config.ownerAddress === 'YOUR_LOCAL_OWNER_ADDRESS') {
-        throw new Error('Invalid owner address configuration');
-      }
-
-      // Create a new transaction using the Transaction builder
+      // Create a new transaction
       const tx = new Transaction();
       
-      // Build the move call for payment
+      // Build the move call for the game payment
       tx.moveCall({
         target: `${config.packageId}::payment::pay_for_game`,
+        typeArguments: [], // No type arguments needed for this call
         arguments: [
-          // We don't need to specify coin object IDs - the wallet will handle coin selection
-          config.ownerAddress
+          tx.pure.address(config.ownerAddress) // Properly format the owner address argument
         ],
-        typeArguments: ['0x2::sui::SUI']
       });
 
-      // Execute the transaction
+      // Execute the transaction with proper type specification
       const response = await wallet.signAndExecuteTransaction({
         transaction: tx,
+        chain: 'sui', // Specify the chain
+        options: {
+          showEvents: true,
+          showEffects: true,
+          showInput: true,
+          showResults: true,
+        }
       });
 
-      console.log('Transaction response:', {
-        status: response?.effects?.status?.status,
-        error: response?.effects?.status?.error,
-        digest: response?.effects?.transactionDigest,
-        packageId: config.packageId,
-        ownerAddress: config.ownerAddress
-      });
-      
       if (response?.effects?.status?.status === 'success') {
         console.log('Payment successful, starting game...');
         startGame();
@@ -179,6 +166,13 @@ const handleGameStart = async () => {
     } catch (error) {
       console.error('Payment error:', error);
       alert('Payment failed: ' + error.message);
+      
+      // Log additional details to help with debugging
+      console.error('Transaction details:', {
+        packageId: config.packageId,
+        ownerAddress: config.ownerAddress,
+        error: error
+      });
     } finally {
       setPaying(false);
       setTransactionInProgress(false);
