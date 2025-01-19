@@ -49,13 +49,36 @@ const GameApp = () => {
 
     updateWalletState();
   }, [wallet.connected, wallet.account, wallet.status]);
-
+  useEffect(() => {
+  // Check configuration on app start
+  if (!config.packageId || config.packageId === 'YOUR_LOCAL_PACKAGE_ID') {
+    console.error('Warning: Package ID not properly configured');
+  }
+  if (!config.ownerAddress || config.ownerAddress === 'YOUR_LOCAL_OWNER_ADDRESS') {
+    console.error('Warning: Owner address not properly configured');
+  }
+}, []);
   // Initialize game when wallet is ready
   useEffect(() => {
   const initializeGame = async () => {
     try {
       if (window.gameManager && walletInitialized) {
-        await window.gameManager.initialize();
+        console.log('Initializing game manager...');
+        const success = await window.gameManager.initialize();
+        
+        if (success) {
+          console.log('Game manager initialized successfully');
+          // Add event listener for game over
+          window.gameManager.onGameOver = (finalScore) => {
+            setGameState(prev => ({
+              ...prev,
+              score: finalScore,
+              isGameOver: true
+            }));
+          };
+        } else {
+          console.error('Game manager initialization failed');
+        }
       }
     } catch (error) {
       console.error("Failed to initialize game:", error);
@@ -79,6 +102,12 @@ const handleGameStart = async () => {
       setTransactionInProgress(true);
       
       console.log('Checking wallet balance...');
+      console.log('Using config:', {
+        packageId: config.packageId,
+        ownerAddress: config.ownerAddress,
+        network: config.network
+      });
+
       const balance = await wallet.getBalance({
         type: '0x2::sui::SUI'
       });
@@ -93,15 +122,23 @@ const handleGameStart = async () => {
         throw new Error(`Insufficient balance. Required: 0.2 SUI, Found: ${balance.totalBalance / 1000000000} SUI`);
       }
 
+      // Verify we have valid configuration
+      if (!config.packageId || config.packageId === 'YOUR_LOCAL_PACKAGE_ID') {
+        throw new Error('Invalid package ID configuration');
+      }
+      if (!config.ownerAddress || config.ownerAddress === 'YOUR_LOCAL_OWNER_ADDRESS') {
+        throw new Error('Invalid owner address configuration');
+      }
+
       console.log('Initiating payment transaction...');
       const response = await wallet.signAndExecuteTransaction({
         transaction: {
           kind: 'moveCall',
           data: {
-            packageObjectId: config.packageId,
+            packageObjectId: config.packageId, // Use config value instead of hardcoded
             module: 'payment',
             function: 'pay_for_game',
-            arguments: [balance.coinObjectIds[0], config.ownerAddress],
+            arguments: [balance.coinObjectIds[0], config.ownerAddress], // Use config value
             typeArguments: ['0x2::sui::SUI'],
             gasBudget: 2000000
           }
@@ -111,7 +148,9 @@ const handleGameStart = async () => {
       console.log('Transaction response:', {
         status: response?.effects?.status?.status,
         error: response?.effects?.status?.error,
-        digest: response?.effects?.transactionDigest
+        digest: response?.effects?.transactionDigest,
+        packageId: config.packageId,
+        ownerAddress: config.ownerAddress
       });
       
       if (response?.effects?.status?.status === 'success') {
@@ -131,7 +170,7 @@ const handleGameStart = async () => {
     console.log('Starting free game...');
     startGame();
   }
-};};
+};
 const startGame = () => {
     // Reset paying state and initialize new game state
     setPaying(false);
