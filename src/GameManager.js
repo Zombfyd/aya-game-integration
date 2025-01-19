@@ -401,7 +401,7 @@ class GameManager {
       throw error; // Re-throw to be handled by caller
     }
   }
-}
+
 
   // Game Over Handler
   async handleGameOver() {
@@ -416,7 +416,7 @@ class GameManager {
       scorePopup.style.visibility = "visible";
     }
   }
-}
+
 
 /**
  * Base Entity class for game objects
