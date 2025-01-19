@@ -115,11 +115,7 @@ const GameApp = () => {
   initializeGame();
 }, [walletInitialized]);
 
-
-
-
-
-
+  
 const handleGameStart = async () => {
   if (!wallet.connected) {
     alert('Please connect your wallet first');
@@ -131,13 +127,15 @@ const handleGameStart = async () => {
       setPaying(true);
       setTransactionInProgress(true);
 
-      // Get the user's connected network from their wallet
-      const userNetwork = wallet.chain?.split(':')[1]; // This splits 'sui:testnet' or 'sui:mainnet' to get just the network name
-      
-      // Check if we're in the right environment for this network
+      // Get the user's connected network
+      const userNetwork = wallet.chain && typeof wallet.chain === 'string' ? wallet.chain.split(':')[1] : null;
+      if (!userNetwork) {
+        throw new Error('Invalid network information from wallet.');
+      }
+
       const isProduction = process.env.REACT_APP_ENVIRONMENT === 'production';
       const expectedNetwork = isProduction ? 'mainnet' : 'testnet';
-      
+
       if (userNetwork !== expectedNetwork) {
         throw new Error(`Please connect to ${expectedNetwork}. Your wallet is currently connected to ${userNetwork}.`);
       }
@@ -146,19 +144,17 @@ const handleGameStart = async () => {
         userNetwork,
         environment: process.env.REACT_APP_ENVIRONMENT || 'development',
         packageId: config.packageId,
-        ownerAddress: config.ownerAddress
+        ownerAddress: config.ownerAddress,
       });
 
       const tx = new Transaction();
-      
+
       tx.moveCall({
         target: `${config.packageId}::payment::pay_for_game`,
-        arguments: [
-          tx.pure.address(config.ownerAddress)
-        ],
+        arguments: [tx.pure.address(config.ownerAddress)],
       });
 
-      // Use the actual network from the user's wallet
+      // Execute the transaction on the detected network
       const response = await wallet.signAndExecuteTransaction({
         transaction: tx,
         chain: `sui:${userNetwork}`,
@@ -167,14 +163,14 @@ const handleGameStart = async () => {
           showEffects: true,
           showInput: true,
           showResults: true,
-        }
+        },
       });
 
       console.log('Transaction response:', {
         status: response?.effects?.status?.status,
         error: response?.effects?.status?.error,
         digest: response?.effects?.transactionDigest,
-        network: userNetwork
+        network: userNetwork,
       });
 
       if (response?.effects?.status?.status === 'success') {
@@ -186,14 +182,6 @@ const handleGameStart = async () => {
     } catch (error) {
       console.error('Payment error:', error);
       alert('Payment failed: ' + error.message);
-      
-      console.error('Detailed transaction information:', {
-        error,
-        environment: process.env.REACT_APP_ENVIRONMENT || 'development',
-        userNetwork: wallet.chain?.split(':')[1],
-        packageId: config.packageId,
-        ownerAddress: config.ownerAddress
-      });
     } finally {
       setPaying(false);
       setTransactionInProgress(false);
@@ -203,6 +191,7 @@ const handleGameStart = async () => {
     startGame();
   }
 };
+
 const startGame = () => {
     if (!gameManagerInitialized) {
       console.error('Cannot start game - game manager not initialized');
