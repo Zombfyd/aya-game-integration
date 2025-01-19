@@ -5,6 +5,8 @@ import React, { useState, useEffect } from 'react';
 import { useWallet, ConnectButton } from '@suiet/wallet-kit';
 import './App.css';
 import config from './config';
+// In your handleGameStart function, update the payment transaction:
+import { Transaction } from "@mysten/sui/transactions";  
 
 const GameApp = () => {
   // Wallet hook and state management
@@ -115,8 +117,7 @@ const GameApp = () => {
 }, [walletInitialized]);
 
 
-// In your handleGameStart function, update the payment transaction:
-import { Transaction } from "@mysten/sui/transactions";
+
 
 const handleGameStart = async () => {
   if (!wallet.connected) {
