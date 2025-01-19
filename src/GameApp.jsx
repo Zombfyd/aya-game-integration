@@ -122,70 +122,66 @@ const handleGameStart = async () => {
     return;
   }
 
-  if (gameMode === 'paid') {
-    try {
-      setPaying(true);
-      setTransactionInProgress(true);
+  try {
+    setPaying(true);
+    setTransactionInProgress(true);
 
-      // Get the user's connected network
-      const userNetwork = wallet.chain && typeof wallet.chain === 'string' ? wallet.chain.split(':')[1] : null;
-      if (!userNetwork) {
-        throw new Error('Invalid network information from wallet.');
-      }
-
-      const isProduction = process.env.REACT_APP_ENVIRONMENT === 'production';
-      const expectedNetwork = isProduction ? 'mainnet' : 'testnet';
-
-      if (userNetwork !== expectedNetwork) {
-        throw new Error(`Please connect to ${expectedNetwork}. Your wallet is currently connected to ${userNetwork}.`);
-      }
-
-      console.log('Initiating payment transaction:', {
-        userNetwork,
-        environment: process.env.REACT_APP_ENVIRONMENT || 'development',
-        packageId: config.packageId,
-        ownerAddress: config.ownerAddress,
-      });
-
-      const tx = new Transaction();
-
-      tx.moveCall({
-        target: `${config.packageId}::payment::pay_for_game`,
-        arguments: [tx.pure.address(config.ownerAddress)],
-      });
-
-      // Execute the transaction on the detected network
-      const response = await wallet.signAndExecuteTransaction({
-        transaction: tx,
-        chain: `sui:${userNetwork}`,
-        options: {
-          showEvents: true,
-          showEffects: true,
-          showInput: true,
-          showResults: true,
-        },
-      });
-
-      console.log('Transaction response:', {
-        status: response?.effects?.status?.status,
-        error: response?.effects?.status?.error,
-        digest: response?.effects?.transactionDigest,
-        network: userNetwork,
-      });
-
-      if (response?.effects?.status?.status === 'success') {
-        console.log('Payment successful, starting game...');
-        startGame();
-      } else {
-        throw new Error('Transaction failed: ' + (response?.effects?.status?.error || 'Unknown error'));
-      }
-    } catch (error) {
-      console.error('Payment error:', error);
-      alert('Payment failed: ' + error.message);
-    } finally {
-      setPaying(false);
-      setTransactionInProgress(false);
+    // Use wallet.chain?.name for network information
+    const userNetwork = wallet.chain?.name?.split(':')[1]; // Get "testnet", "devnet", or "mainnet"
+    if (!userNetwork) {
+      throw new Error('Invalid or missing network information from wallet.');
     }
+
+    const isProduction = process.env.REACT_APP_ENVIRONMENT === 'production';
+    const expectedNetwork = isProduction ? 'mainnet' : 'testnet';
+
+    if (userNetwork !== expectedNetwork) {
+      throw new Error(
+        `Please connect to ${expectedNetwork}. Your wallet is currently connected to ${userNetwork}.`
+      );
+    }
+
+    console.log('Network information:', {
+      userNetwork,
+      expectedNetwork,
+      environment: process.env.REACT_APP_ENVIRONMENT || 'development',
+    });
+
+    // Example transaction code
+    const tx = new Transaction();
+    tx.moveCall({
+      target: `${config.packageId}::payment::pay_for_game`,
+      arguments: [tx.pure.address(config.ownerAddress)],
+    });
+
+    const response = await wallet.signAndExecuteTransaction({
+      transaction: tx,
+      chain: wallet.chain?.name, // Directly use the chain's name
+      options: {
+        showEvents: true,
+        showEffects: true,
+        showInput: true,
+        showResults: true,
+      },
+    });
+
+    console.log('Transaction response:', response);
+    console.log('Wallet Info:', wallet);
+    console.log('Wallet chain:', wallet.chain);
+
+    if (response?.effects?.status?.status === 'success') {
+      console.log('Payment successful, starting game...');
+      startGame();
+    } else {
+      throw new Error('Transaction failed: ' + (response?.effects?.status?.error || 'Unknown error'));
+    }
+  } catch (error) {
+    console.error('Error during game start:', error);
+    alert(error.message); // Provide meaningful feedback to the user
+  } finally {
+    setPaying(false);
+    setTransactionInProgress(false);
+  }
   } else {
     console.log('Starting free game...');
     startGame();
@@ -273,7 +269,7 @@ const fetchLeaderboards = async () => {
     
     const fetchWithTimeout = async (url) => {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 5000);
+      
       
       try {
         console.log(`Fetching from ${url}...`);
