@@ -29,7 +29,7 @@ const GameApp = () => {
   
   
   const [paying, setPaying] = useState(false);
-  await fetchLeaderboards();
+  fetchLeaderboards();
   // Enhanced wallet connection monitoring
   useEffect(() => {
     const updateWalletState = async () => {
