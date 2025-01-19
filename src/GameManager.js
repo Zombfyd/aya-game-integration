@@ -1,4 +1,9 @@
-// GameManager.js
+// GameManager.js - Main game controller class
+// This file contains the game manager and related entity classes for the tear-catching game
+
+/**
+ * Main GameManager class that controls the game state and mechanics
+ */
 class GameManager {
   constructor() {
     // Initialize game state variables
@@ -8,14 +13,20 @@ class GameManager {
     this.gameActive = false;
     this.score = 0;
     this.lives = 10;
+    
+    // Initialize arrays for game entities
     this.teardrops = [];
     this.goldtears = [];
     this.redtears = [];
     this.blacktears = [];
     this.splashes = [];
     this.bucket = null;
+    
+    // Game progression variables
     this.speedMultiplier = 1;
     this.lastCheckpoint = 0;
+    
+    // Spawn timers for different tear types
     this.spawnTimers = {
       teardrop: null,
       goldtear: null,
@@ -39,14 +50,14 @@ class GameManager {
     this.handleResize = this.handleResize.bind(this);
   }
 
-  // Helper method to load images
+  // Image Loading Method
   loadImage(src) {
     const img = new Image();
     img.src = src;
     return img;
   }
 
-  // Initialize the game environment
+  // Game Initialization Methods
   async initialize() {
     this.canvas = document.getElementById('tearCatchGameCanvas');
     if (!this.canvas) {
@@ -81,20 +92,7 @@ class GameManager {
     }
   }
 
-  // Handle canvas resizing
-  resizeCanvas() {
-    if (this.canvas) {
-      this.canvas.width = this.canvas.parentNode.offsetWidth;
-      this.canvas.height = this.canvas.parentNode.offsetHeight;
-      
-      // Adjust bucket position after resize
-      if (this.bucket) {
-        this.bucket.y = this.canvas.height - 80;
-        this.bucket.x = Math.min(this.bucket.x, this.canvas.width - this.bucket.width);
-      }
-    }
-  }
- initGame() {
+  initGame() {
     console.log('Initializing game components...');
     
     // Reset game variables
@@ -127,118 +125,116 @@ class GameManager {
 
     console.log('Game components initialized');
   }
-  // Start a new game
+
+  // Game Control Methods
   startGame(mode = 'free') {
-  console.log('Starting game in mode:', mode);
-  
-  // Clear any existing game state
-  this.clearGame();
-  
-  // Use initGame for initialization
-  this.initGame();
-  
-  // Set game mode (only needed in startGame)
-  this.gameMode = mode;
+    console.log('Starting game in mode:', mode);
+    
+    this.clearGame();
+    this.initGame();
+    this.gameMode = mode;
+    this.drawGame();
 
-  // Draw initial game state
-  this.drawGame();
+    // Start spawning tears with a delay
+    setTimeout(() => {
+      if (this.gameActive) {
+        this.spawnTeardrop();
+        this.spawnGoldtear();
+        this.spawnRedtear();
+        this.spawnBlacktear();
+      }
+    }, 1000);
 
-  // Start spawning tears with a delay
-  setTimeout(() => {
-    if (this.gameActive) {
-      this.spawnTeardrop();
-      this.spawnGoldtear();
-      this.spawnRedtear();
-      this.spawnBlacktear();
+    // Start the game loop
+    if (!this.gameLoopId) {
+      this.gameLoop();
     }
-  }, 1000);
-
-  // Start the game loop
-  if (!this.gameLoopId) {
-    this.gameLoop();
+    
+    console.log('Game started successfully');
+    return true;
   }
-  
-  console.log('Game started successfully');
-  return true;
-}
-    // Start spawning tears after a short delay
-clearGame() {
-  // Cancel existing game loop
-  if (this.gameLoopId) {
-    cancelAnimationFrame(this.gameLoopId);
-    this.gameLoopId = null;
+
+  clearGame() {
+    if (this.gameLoopId) {
+      cancelAnimationFrame(this.gameLoopId);
+      this.gameLoopId = null;
+    }
+    
+    Object.values(this.spawnTimers).forEach(timer => {
+      if (timer) clearTimeout(timer);
+    });
+
+    this.spawnTimers = {
+      teardrop: null,
+      goldtear: null,
+      redtear: null,
+      blacktear: null
+    };
+
+    this.teardrops = [];
+    this.goldtears = [];
+    this.redtears = [];
+    this.blacktears = [];
+    this.splashes = [];
+    this.gameActive = false;
   }
-  
-  // Clear spawn timers
-  Object.values(this.spawnTimers).forEach(timer => {
-    if (timer) clearTimeout(timer);
-  });
 
-  // Reset spawn timers
-  this.spawnTimers = {
-    teardrop: null,
-    goldtear: null,
-    redtear: null,
-    blacktear: null
-  };
-
-  // Clear game objects
-  this.teardrops = [];
-  this.goldtears = [];
-  this.redtears = [];
-  this.blacktears = [];
-  this.splashes = [];
-  this.gameActive = false;
-}
-  // Handle pointer/mouse movement
+  // Event Handlers
   handlePointerMove(e) {
     if (!this.gameActive || !this.bucket) return;
 
     const rect = this.canvas.getBoundingClientRect();
     const pointerX = e.clientX - rect.left;
     
-    // Update bucket position
     this.bucket.x = Math.min(
       Math.max(pointerX - this.bucket.width / 2, 0),
       this.canvas.width - this.bucket.width
     );
   }
 
-  // Handle window resize
   handleResize() {
     this.resizeCanvas();
   }
 
-  // Spawn different types of tears
+  // Canvas Management
+  resizeCanvas() {
+    if (this.canvas) {
+      this.canvas.width = this.canvas.parentNode.offsetWidth;
+      this.canvas.height = this.canvas.parentNode.offsetHeight;
+      
+      if (this.bucket) {
+        this.bucket.y = this.canvas.height - 80;
+        this.bucket.x = Math.min(this.bucket.x, this.canvas.width - this.bucket.width);
+      }
+    }
+  }
+
+  // Spawn Methods
   spawnTeardrop() {
     if (!this.gameActive) return;
-    
     this.teardrops.push(new Teardrop(this.canvas.width, this.speedMultiplier));
     this.spawnTimers.teardrop = setTimeout(() => this.spawnTeardrop(), Math.random() * 750 + 300);
   }
 
   spawnGoldtear() {
     if (!this.gameActive) return;
-    
     this.goldtears.push(new Goldtear(this.canvas.width, this.speedMultiplier));
     this.spawnTimers.goldtear = setTimeout(() => this.spawnGoldtear(), Math.random() * 3000 + 1500);
   }
 
   spawnRedtear() {
     if (!this.gameActive) return;
-    
     this.redtears.push(new Redtear(this.canvas.width, this.speedMultiplier));
     this.spawnTimers.redtear = setTimeout(() => this.spawnRedtear(), Math.random() * 12000 + 3000);
   }
 
   spawnBlacktear() {
     if (!this.gameActive) return;
-    
     this.blacktears.push(new Blacktear(this.canvas.width, this.speedMultiplier));
     this.spawnTimers.blacktear = setTimeout(() => this.spawnBlacktear(), Math.random() * 6000 + 3000);
   }
 
-  // Update game state
+  // Game Update Methods
   updateGame() {
     this.updateEntities(this.teardrops, false, false, false);
     this.updateEntities(this.goldtears, true, false, false);
@@ -246,23 +242,21 @@ clearGame() {
     this.updateEntities(this.blacktears, false, false, true);
 
     this.splashes = this.splashes.filter(splash => {
-    splash.update();
-    return splash.opacity > 0;
-  });
-    // Update speed multiplier based on score
+      splash.update();
+      return splash.opacity > 0;
+    });
+
     if (this.score >= this.lastCheckpoint + 100) {
       this.speedMultiplier *= 1.1;
       this.lastCheckpoint += 100;
     }
 
-    // Check for game over
     if (this.lives <= 0 && this.gameActive) {
       this.gameActive = false;
       this.handleGameOver();
     }
   }
 
-  // Update entities (tears and splashes)
   updateEntities(entities, isGold, isRed, isBlack) {
     for (let i = entities.length - 1; i >= 0; i--) {
       const entity = entities[i];
@@ -278,7 +272,7 @@ clearGame() {
     }
   }
 
-  // Check collision between entities
+  // Collision Detection
   checkCollision(entity, bucket) {
     return (
       entity.x < bucket.x + bucket.width &&
@@ -288,7 +282,6 @@ clearGame() {
     );
   }
 
-  // Handle collision effects
   handleCollision(entity, isGold, isRed, isBlack) {
     if (isGold) {
       this.score += 15;
@@ -304,22 +297,23 @@ clearGame() {
       this.splashes.push(new Splash(entity.x + entity.width / 2, this.bucket.y));
     }
   }
+
+  // Drawing Methods
   drawTear(tear, image) {
-  if (!this.ctx || !image) return;
-  
-  this.ctx.drawImage(
-    image,
-    tear.x,
-    tear.y,
-    tear.width,
-    tear.height
-  );
-}
-  // Draw game state
+    if (!this.ctx || !image) return;
+    
+    this.ctx.drawImage(
+      image,
+      tear.x,
+      tear.y,
+      tear.width,
+      tear.height
+    );
+  }
+
   drawGame() {
     if (!this.ctx) return;
 
-    // Draw bucket
     if (this.bucket && this.images.bucket) {
       this.ctx.drawImage(
         this.images.bucket,
@@ -330,40 +324,29 @@ clearGame() {
       );
     }
 
-    // Draw tears
     this.teardrops.forEach(tear => this.drawTear(tear, this.images.teardrop));
     this.goldtears.forEach(tear => this.drawTear(tear, this.images.goldtear));
     this.redtears.forEach(tear => this.drawTear(tear, this.images.redtear));
     this.blacktears.forEach(tear => this.drawTear(tear, this.images.blacktear));
 
-    // Draw UI
     this.drawUI();
   }
 
-  // Additional game methods (handlePointerMove, spawnTeardrop, etc.) remain the same...
-}
-
-  // Draw UI elements
   drawUI() {
     this.ctx.font = "25px Inconsolata";
     this.ctx.fillStyle = "#2054c9";
     
-    // Draw score
     this.ctx.fillText(`Score: ${this.score}`, 20, 30);
     
-    // Draw lives
     this.ctx.font = "18px Inconsolata";
     this.ctx.fillText(`${this.lives}`, this.bucket.x + (this.bucket.width / 2) - 10, this.bucket.y + 40);
     
-    // Draw speed
     this.ctx.font = "25px Inconsolata";
     this.ctx.fillText(`Speed ${Math.round(this.speedMultiplier * 10) - 10}`, this.canvas.width - 120, 30);
     
-    // Draw legend
     this.drawLegend();
   }
 
-  // Draw game legend
   drawLegend() {
     this.ctx.font = "18px Inconsolata";
     
@@ -379,36 +362,29 @@ clearGame() {
     this.ctx.fillStyle = "#39B037";
     this.ctx.fillText('Green Tear = +1 life', 20, 110);
   }
- 
-  // Main game loop
-   gameLoop() {
-  if (!this.gameActive || !this.ctx) return;
-  
-  try {
-    // Clear canvas
-    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-    // Update game state
-    this.updateGame();
-
-    // Draw everything
-    this.drawGame();
-
-    // Continue loop
-    this.gameLoopId = requestAnimationFrame(this.gameLoop);
-  } catch (error) {
-    console.error('Error in game loop:', error);
-    this.gameActive = false;
-    this.handleGameOver();
+  // Game Loop
+  gameLoop() {
+    if (!this.gameActive || !this.ctx) return;
+    
+    try {
+      this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+      this.updateGame();
+      this.drawGame();
+      this.gameLoopId = requestAnimationFrame(this.gameLoop);
+    } catch (error) {
+      console.error('Error in game loop:', error);
+      this.gameActive = false;
+      this.handleGameOver();
+    }
   }
-}
 
-  // Handle game over
+  // Game Over Handler
   async handleGameOver() {
     if (window.currentWalletAddress) {
       await this.submitScore();
     }
-    // Show game over UI
+    
     const scorePopup = document.getElementById('scorePopup');
     const finalScore = document.getElementById('finalScore');
     if (scorePopup && finalScore) {
@@ -418,6 +394,9 @@ clearGame() {
   }
 }
 
+/**
+ * Base Entity class for game objects
+ */
 class Entity {
   constructor(x, y, width, height, speed) {
     this.x = x;
@@ -432,9 +411,20 @@ class Entity {
   }
 }
 
+/**
+ * Teardrop class - Base class for all falling tear objects
+ * Extends Entity with specific tear properties and behaviors
+ */
 class Teardrop extends Entity {
   constructor(canvasWidth, speedMultiplier) {
-    super(Math.random() * canvasWidth, 0, 50, 50, Math.random() * 2 + 2 * speedMultiplier);
+    // Random x position, start at top, with size and speed calculations
+    super(
+      Math.random() * canvasWidth, 
+      0, 
+      50, 
+      50, 
+      Math.random() * 2 + 2 * speedMultiplier
+    );
   }
 
   draw(ctx, image) {
@@ -442,10 +432,18 @@ class Teardrop extends Entity {
   }
 }
 
+/**
+ * Special tear types extending base Teardrop
+ * Each has same properties but different scoring and effects
+ */
 class Goldtear extends Teardrop {}
 class Redtear extends Teardrop {}
 class Blacktear extends Teardrop {}
 
+/**
+ * Splash effect base class
+ * Creates visual feedback for tear collection
+ */
 class Splash {
   constructor(x, y) {
     if (!Number.isFinite(x) || !Number.isFinite(y)) {
@@ -473,6 +471,10 @@ class Splash {
   }
 }
 
+/**
+ * Specialized splash effects for different tear types
+ * Each has a unique color for visual feedback
+ */
 class GoldSplash extends Splash {
   constructor(x, y) {
     super(x, y);
@@ -496,5 +498,3 @@ class GreenSplash extends Splash {
 
 // Create and export game manager instance
 export const gameManager = new GameManager();
-
-
