@@ -1,4 +1,6 @@
 // GameApp.jsx
+import { gameManager } from './GameManager';
+window.gameManager = gameManager;
 import React, { useState, useEffect } from 'react';
 import { useWallet, ConnectButton } from '@suiet/wallet-kit';
 import './App.css';
@@ -6,6 +8,7 @@ import config from './config';
 
 const GameApp = () => {
   // Wallet hook and state management
+  const [gameManagerInitialized, setGameManagerInitialized] = useState(false);
   const wallet = useWallet();
   const [walletInitialized, setWalletInitialized] = useState(false);
   const [isLeaderboardLoading, setIsLeaderboardLoading] = useState(false);
@@ -58,6 +61,29 @@ const GameApp = () => {
     console.error('Warning: Owner address not properly configured');
   }
 }, []);
+  useEffect(() => {
+    const initializeGameManager = async () => {
+      try {
+        console.log('Attempting to initialize game manager...');
+        if (!window.gameManager) {
+          console.error('GameManager not found on window object');
+          return;
+        }
+
+        const success = await window.gameManager.initialize();
+        if (success) {
+          console.log('Game manager initialized successfully');
+          setGameManagerInitialized(true);
+        } else {
+          console.error('Game manager initialization returned false');
+        }
+      } catch (error) {
+        console.error('Error initializing game manager:', error);
+      }
+    };
+
+    initializeGameManager();
+  }, []); 
   // Initialize game when wallet is ready
   useEffect(() => {
   const initializeGame = async () => {
@@ -172,6 +198,11 @@ const handleGameStart = async () => {
   }
 };
 const startGame = () => {
+    if (!gameManagerInitialized) {
+      console.error('Cannot start game - game manager not initialized');
+      alert('Please wait for game to initialize');
+      return;
+    }
     // Reset paying state and initialize new game state
     setPaying(false);
     setGameState(prev => ({
@@ -460,6 +491,7 @@ const fetchLeaderboards = async () => {
         <div className="debug-info">
           <p>Wallet Connected: {String(wallet.connected)}</p>
           <p>Wallet Initialized: {String(walletInitialized)}</p>
+          <p>Game Manager Initialized: {String(gameManagerInitialized)}</p>
           <p>Wallet Name: {wallet.name || 'None'}</p>
           <p>Wallet Address: {wallet.account?.address || 'None'}</p>
           <p>Game Mode: {gameMode}</p>
