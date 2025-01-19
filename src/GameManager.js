@@ -386,8 +386,7 @@ class GameManager {
         throw new Error('No wallet address available');
       }
 
-      // If you have a specific API endpoint for score submission, you can use it here
-      // For now, we'll just log the score
+      // Log the score or integrate with an API endpoint
       console.log('Score submitted:', {
         score: this.score,
         wallet: window.currentWalletAddress,
@@ -398,10 +397,9 @@ class GameManager {
       return true;
     } catch (error) {
       console.error('Failed to submit score:', error);
-      throw error; // Re-throw to be handled by caller
+      throw error; // Re-throw to be handled by the caller
     }
   }
-
 
   // Game Over Handler
   async handleGameOver() {
@@ -416,7 +414,7 @@ class GameManager {
       scorePopup.style.visibility = "visible";
     }
   }
-
+}
 
 /**
  * Base Entity class for game objects
