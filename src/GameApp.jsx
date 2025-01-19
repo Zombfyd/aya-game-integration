@@ -357,70 +357,77 @@ const fetchLeaderboards = async () => {
     </div>
   );
   return (
-    <div className="game-container">
+  <div className={`game-container ${gameState.gameStarted ? 'active' : ''}`}>
+    {!gameState.gameStarted && (
       <header>
-        <ConnectButton />
-        <div className="wallet-status">
-          {wallet.connecting && <div>Connecting...</div>}
-          {wallet.connected && wallet.account && (
+        <div className="wkit-connected-container">
+          <ConnectButton />
+        </div>
+        
+        {wallet.connected && wallet.account && (
+          <div className="wallet-status">
             <div className="wallet-info">
               Connected to {wallet.name}
               <br />
               {wallet.account.address.slice(0, 6)}...{wallet.account.address.slice(-4)}
             </div>
-          )}
-        </div>
-       <div className="mode-selector">
-  <button 
-    onClick={() => {
-      setGameMode('free');
-      setTransactionInProgress(false);
-      setPaying(false);
-    }}
-    className={gameMode === 'free' ? 'active' : ''}
-    disabled={!wallet.connected}
-  >
-    Free Mode
-  </button>
-  <button 
-    onClick={() => {
-      setGameMode('paid');
-      setTransactionInProgress(false);
-      setPaying(false);
-    }}
-    className={gameMode === 'paid' ? 'active' : ''}
-    disabled={!wallet.connected}
-  >
-    Paid Mode
-  </button>
-</div>
-      </header>
+          </div>
+        )}
 
-      {wallet.connected && !gameState.gameStarted && (
-        <div className="game-popup">
-          <h2>Ready to Play?</h2>
+        {wallet.connecting && (
+          <div className="wallet-status">
+            <div>Connecting...</div>
+          </div>
+        )}
+
+        <div className="mode-selector">
+          <button 
+            onClick={() => {
+              setGameMode('free');
+              setTransactionInProgress(false);
+              setPaying(false);
+            }}
+            className={gameMode === 'free' ? 'active' : ''}
+            disabled={!wallet.connected}
+          >
+            Free Mode
+          </button>
+          <button 
+            onClick={() => {
+              setGameMode('paid');
+              setTransactionInProgress(false);
+              setPaying(false);
+            }}
+            className={gameMode === 'paid' ? 'active' : ''}
+            disabled={!wallet.connected}
+          >
+            Paid Mode
+          </button>
+        </div>
+
+        {wallet.connected && (
           <button 
             onClick={handleGameStart}
             disabled={paying}
+            className="start-button"
           >
             {gameMode === 'paid' ? 'Pay 0.2 SUI and Start Game' : 'Start Free Game'}
           </button>
-        </div>
-      )}
-      {/* Add the new transaction status here */}
-      {gameMode === 'paid' && transactionInProgress && (
-        <div className="transaction-status">
-          Transaction in progress...
-        </div>
-      )}
-      {!wallet.connected && (
-        <div className="game-popup">
-          <h2>Connect Wallet to Play</h2>
-          <p>Please connect your wallet to start playing</p>
-        </div>
-      )}
+        )}
 
-      <canvas id="tearCatchGameCanvas" className="game-canvas" />
+        {!wallet.connected && (
+          <p className="connect-prompt">Please connect your wallet to start playing</p>
+        )}
+
+        {gameMode === 'paid' && transactionInProgress && (
+          <div className="transaction-status">
+            Transaction in progress...
+          </div>
+        )}
+      </header>
+    )}
+
+    <canvas id="tearCatchGameCanvas" className="game-canvas" />
 
       <div className="leaderboards-container">
         {isLeaderboardLoading ? (
