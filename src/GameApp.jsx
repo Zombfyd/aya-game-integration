@@ -118,6 +118,8 @@ const GameApp = () => {
 
 
 
+import { Transaction } from "@mysten/sui/transactions";
+
 const handleGameStart = async () => {
   if (!wallet.connected) {
     alert('Please connect your wallet first');
@@ -128,31 +130,51 @@ const handleGameStart = async () => {
     try {
       setPaying(true);
       setTransactionInProgress(true);
-      
-      console.log('Initiating payment transaction...');
 
-      // Create a new transaction
+      // Get the user's connected network from their wallet
+      const userNetwork = wallet.chain?.split(':')[1]; // This splits 'sui:testnet' or 'sui:mainnet' to get just the network name
+      
+      // Check if we're in the right environment for this network
+      const isProduction = process.env.REACT_APP_ENVIRONMENT === 'production';
+      const expectedNetwork = isProduction ? 'mainnet' : 'testnet';
+      
+      if (userNetwork !== expectedNetwork) {
+        throw new Error(`Please connect to ${expectedNetwork}. Your wallet is currently connected to ${userNetwork}.`);
+      }
+
+      console.log('Initiating payment transaction:', {
+        userNetwork,
+        environment: process.env.REACT_APP_ENVIRONMENT || 'development',
+        packageId: config.packageId,
+        ownerAddress: config.ownerAddress
+      });
+
       const tx = new Transaction();
       
-      // Build the move call for the game payment
       tx.moveCall({
         target: `${config.packageId}::payment::pay_for_game`,
-        typeArguments: [], // No type arguments needed for this call
         arguments: [
-          tx.pure.address(config.ownerAddress) // Properly format the owner address argument
+          tx.pure.address(config.ownerAddress)
         ],
       });
 
-      // Execute the transaction with proper type specification
+      // Use the actual network from the user's wallet
       const response = await wallet.signAndExecuteTransaction({
         transaction: tx,
-        chain: 'sui', // Specify the chain
+        chain: `sui:${userNetwork}`,
         options: {
           showEvents: true,
           showEffects: true,
           showInput: true,
           showResults: true,
         }
+      });
+
+      console.log('Transaction response:', {
+        status: response?.effects?.status?.status,
+        error: response?.effects?.status?.error,
+        digest: response?.effects?.transactionDigest,
+        network: userNetwork
       });
 
       if (response?.effects?.status?.status === 'success') {
@@ -165,11 +187,12 @@ const handleGameStart = async () => {
       console.error('Payment error:', error);
       alert('Payment failed: ' + error.message);
       
-      // Log additional details to help with debugging
-      console.error('Transaction details:', {
+      console.error('Detailed transaction information:', {
+        error,
+        environment: process.env.REACT_APP_ENVIRONMENT || 'development',
+        userNetwork: wallet.chain?.split(':')[1],
         packageId: config.packageId,
-        ownerAddress: config.ownerAddress,
-        error: error
+        ownerAddress: config.ownerAddress
       });
     } finally {
       setPaying(false);
