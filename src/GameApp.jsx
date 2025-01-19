@@ -118,7 +118,7 @@ const GameApp = () => {
 
 
 
-import { Transaction } from "@mysten/sui/transactions";
+
 
 const handleGameStart = async () => {
   if (!wallet.connected) {
