@@ -29,7 +29,7 @@ const GameApp = () => {
   
   
   const [paying, setPaying] = useState(false);
-
+  await fetchLeaderboards();
   // Enhanced wallet connection monitoring
   useEffect(() => {
     const updateWalletState = async () => {
@@ -42,7 +42,7 @@ const GameApp = () => {
         
         window.currentWalletAddress = wallet.account.address;
         setWalletInitialized(true);
-        await fetchLeaderboards(); // Fetch leaderboards when wallet connects
+         // Fetch leaderboards when wallet connects
       } else {
         console.log('Wallet disconnected or not ready');
         window.currentWalletAddress = null;
@@ -116,6 +116,8 @@ const GameApp = () => {
 
 
 // In your handleGameStart function, update the payment transaction:
+import { Transaction } from "@mysten/sui/transactions";
+
 const handleGameStart = async () => {
   if (!wallet.connected) {
     alert('Please connect your wallet first');
@@ -127,28 +129,14 @@ const handleGameStart = async () => {
       setPaying(true);
       setTransactionInProgress(true);
       
-      console.log('Checking wallet balance...');
+      console.log('Initiating payment transaction...');
       console.log('Using config:', {
         packageId: config.packageId,
         ownerAddress: config.ownerAddress,
         network: config.network
       });
 
-      const balance = await wallet.getBalance({
-        type: '0x2::sui::SUI'
-      });
-      
-      console.log('Current balance:', balance?.totalBalance);
-
-      if (!balance || !balance.coinObjectIds?.length) {
-        throw new Error('No SUI coins found in wallet');
-      }
-
-      if (balance.totalBalance < 200000000) {
-        throw new Error(`Insufficient balance. Required: 0.2 SUI, Found: ${balance.totalBalance / 1000000000} SUI`);
-      }
-
-      // Verify we have valid configuration
+      // Verify configuration
       if (!config.packageId || config.packageId === 'YOUR_LOCAL_PACKAGE_ID') {
         throw new Error('Invalid package ID configuration');
       }
@@ -156,19 +144,22 @@ const handleGameStart = async () => {
         throw new Error('Invalid owner address configuration');
       }
 
-      console.log('Initiating payment transaction...');
+      // Create a new transaction using the Transaction builder
+      const tx = new Transaction();
+      
+      // Build the move call for payment
+      tx.moveCall({
+        target: `${config.packageId}::payment::pay_for_game`,
+        arguments: [
+          // We don't need to specify coin object IDs - the wallet will handle coin selection
+          config.ownerAddress
+        ],
+        typeArguments: ['0x2::sui::SUI']
+      });
+
+      // Execute the transaction
       const response = await wallet.signAndExecuteTransaction({
-        transaction: {
-          kind: 'moveCall',
-          data: {
-            packageObjectId: config.packageId, // Use config value instead of hardcoded
-            module: 'payment',
-            function: 'pay_for_game',
-            arguments: [balance.coinObjectIds[0], config.ownerAddress], // Use config value
-            typeArguments: ['0x2::sui::SUI'],
-            gasBudget: 2000000
-          }
-        }
+        transaction: tx,
       });
 
       console.log('Transaction response:', {
