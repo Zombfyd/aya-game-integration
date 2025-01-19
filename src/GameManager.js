@@ -13,6 +13,7 @@ class GameManager {
     this.gameActive = false;
     this.score = 0;
     this.lives = 10;
+    this.onGameOver = null;
     
     // Initialize arrays for game entities
     this.teardrops = [];
@@ -91,7 +92,16 @@ class GameManager {
       return false;
     }
   }
-
+  handleGameOver() {
+    // If we have a callback function registered, call it with the final score
+    if (this.onGameOver) {
+      this.onGameOver(this.score);
+    }
+    
+    // Clean up the game state
+    this.clearGame();
+  }
+}
   initGame() {
     console.log('Initializing game components...');
     
