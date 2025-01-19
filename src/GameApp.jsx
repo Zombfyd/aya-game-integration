@@ -78,67 +78,60 @@ const handleGameStart = async () => {
       setPaying(true);
       setTransactionInProgress(true);
       
-      // Get coins owned by the wallet
-      const coins = await wallet.getBalance({
-  owner: wallet.account.address,
-  coinType: '0x2::sui::SUI'  // Specify SUI coin type
-});
-
+      console.log('Checking wallet balance...');
+      const balance = await wallet.getBalance({
+        type: '0x2::sui::SUI'
+      });
       
-      // Find a coin with sufficient balance
-      const coin = coins.find(c => c.balance >= 200000000);
-      if (!coin) {
-        throw new Error('Insufficient balance');
+      console.log('Current balance:', balance?.totalBalance);
+
+      if (!balance || !balance.coinObjectIds?.length) {
+        throw new Error('No SUI coins found in wallet');
       }
 
+      if (balance.totalBalance < 200000000) {
+        throw new Error(`Insufficient balance. Required: 0.2 SUI, Found: ${balance.totalBalance / 1000000000} SUI`);
+      }
+
+      console.log('Initiating payment transaction...');
       const response = await wallet.signAndExecuteTransaction({
         transaction: {
           kind: 'moveCall',
           data: {
-            packageObjectId: '0x4bfa52ee471bd01ea0ade83a343de62a4c500f9adc375eb4426a92042887b13d',
+            packageObjectId: config.packageId,
             module: 'payment',
             function: 'pay_for_game',
+            arguments: [balance.coinObjectIds[0], config.ownerAddress],
             typeArguments: ['0x2::sui::SUI'],
-            arguments: [
-              coin.coinObjectId,
-              '0xa376ef54b9d89db49e7eac089a4efca84755f6c325429af97a7ce9b3a549642a'
-            ],
-            gasBudget: 2000000,
+            gasBudget: 2000000
           }
         }
       });
-    
-      console.log('Transaction response:', response);
+
+      console.log('Transaction response:', {
+        status: response?.effects?.status?.status,
+        error: response?.effects?.status?.error,
+        digest: response?.effects?.transactionDigest
+      });
       
       if (response?.effects?.status?.status === 'success') {
-        const events = response.effects?.events || [];
-        const paymentEvent = events.find(e => 
-          e.type.includes('PaymentProcessed')
-        );
-        
-        if (paymentEvent) {
-          console.log('Payment event found:', paymentEvent);
-          startGame();
-          setTransactionInProgress(false);
-        } else {
-          console.warn('No payment event found in transaction');
-          startGame();
-          setTransactionInProgress(false);
-        }
+        console.log('Payment successful, starting game...');
+        startGame();
       } else {
-        console.error('Transaction failed:', response?.effects?.status);
         throw new Error('Transaction failed: ' + (response?.effects?.status?.error || 'Unknown error'));
       }
     } catch (error) {
-      console.error('Error during payment process:', error);
-      alert('Payment failed: ' + (error.message || 'Please make sure you have enough SUI.'));
+      console.error('Payment error:', error);
+      alert('Payment failed: ' + error.message);
+    } finally {
       setPaying(false);
       setTransactionInProgress(false);
     }
   } else {
+    console.log('Starting free game...');
     startGame();
   }
-};
+};};
 const startGame = () => {
     // Reset paying state and initialize new game state
     setPaying(false);
