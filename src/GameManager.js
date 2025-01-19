@@ -101,7 +101,7 @@ class GameManager {
     // Clean up the game state
     this.clearGame();
   }
-}
+
   initGame() {
     console.log('Initializing game components...');
     
