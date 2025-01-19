@@ -31,7 +31,6 @@ const GameApp = () => {
   
   
   const [paying, setPaying] = useState(false);
-  fetchLeaderboards();
   // Enhanced wallet connection monitoring
   useEffect(() => {
     const updateWalletState = async () => {
@@ -83,7 +82,7 @@ const GameApp = () => {
         console.error('Error initializing game manager:', error);
       }
     };
-
+    fetchLeaderboards();
     initializeGameManager();
   }, []); 
   // Initialize game when wallet is ready
