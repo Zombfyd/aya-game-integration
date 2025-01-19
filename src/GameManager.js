@@ -92,15 +92,7 @@ class GameManager {
       return false;
     }
   }
-  handleGameOver() {
-    // If we have a callback function registered, call it with the final score
-    if (this.onGameOver) {
-      this.onGameOver(this.score);
-    }
-    
-    // Clean up the game state
-    this.clearGame();
-  }
+  
 
   initGame() {
     console.log('Initializing game components...');
@@ -388,6 +380,28 @@ class GameManager {
       this.handleGameOver();
     }
   }
+  async submitScore() {
+    try {
+      if (!window.currentWalletAddress) {
+        throw new Error('No wallet address available');
+      }
+
+      // If you have a specific API endpoint for score submission, you can use it here
+      // For now, we'll just log the score
+      console.log('Score submitted:', {
+        score: this.score,
+        wallet: window.currentWalletAddress,
+        timestamp: new Date().toISOString()
+      });
+
+      // Return true to indicate successful submission
+      return true;
+    } catch (error) {
+      console.error('Failed to submit score:', error);
+      throw error; // Re-throw to be handled by caller
+    }
+  }
+}
 
   // Game Over Handler
   async handleGameOver() {
