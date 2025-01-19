@@ -183,9 +183,12 @@ const startGame = () => {
 
     // Start the game using the game manager with current mode
     if (window.gameManager) {
-      window.gameManager.startGame(gameMode);
-    }
-  };
+    window.gameManager.startGame(gameMode);
+    console.log('Game started with mode:', gameMode);
+  } else {
+    console.error('Game manager not initialized');
+  }
+};
 
   const handleScoreSubmit = async () => {
   if (!wallet.connected || !wallet.account) {
